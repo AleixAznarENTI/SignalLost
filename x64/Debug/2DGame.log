@@ -1,8 +1,8 @@
-﻿  Game.cpp
-  ParticleSystem.cpp
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\ParticleSystem.cpp(51,36): warning C4305: 'argumento': truncamiento de 'double' a 'float'
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\ParticleSystem.cpp(59,39): warning C4305: 'argumento': truncamiento de 'double' a 'float'
-  Renderer.cpp
+﻿  Flashlight.cpp
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(21,12): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(22,12): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(83,21): warning C4305: 'inicializando': truncamiento de 'double' a 'float'
+  Game.cpp
   main.cpp
   Generando código...
   2DGame.vcxproj -> C:\Users\Usuario\Desktop\C++\2DGame\2DGame\x64\Debug\2DGame.exe

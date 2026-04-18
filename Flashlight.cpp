@@ -11,30 +11,58 @@ Flashlight::Flashlight(sf::Vector2u windowSize, float radius)
 		throw std::runtime_error("Failed to create flashlight mask texture");
 }
 
-void Flashlight::buildLightCone(sf::Vector2f center) {
+void Flashlight::buildAmbientGlow(sf::Vector2f origin) {
+	const int SEGMENTS = 32;
+	const float ambientR = m_radius * 0.25f;
+
+	sf::VertexArray glow(sf::PrimitiveType::Triangles, SEGMENTS * 3);
+
+	for (int i = 0; i < SEGMENTS; ++i) {
+		float a0 = i * (2.f * M_PI / SEGMENTS);
+		float a1 = (i + 1) * (2.f * M_PI / SEGMENTS);
+
+		glow[i * 3 + 0].position = origin;
+		glow[i * 3 + 0].color = sf::Color(80, 80, 120);
+
+		glow[i * 3 + 1].position = { origin.x + ambientR * std::cos(a0),
+									 origin.y + ambientR * std::sin(a0) };
+		glow[i * 3 + 1].color = sf::Color::Black;
+
+		glow[i * 3 + 2].position = { origin.x + ambientR * std::cos(a1),
+									 origin.y + ambientR * std::sin(a1) };
+		glow[i * 3 + 2].color = sf::Color::Black;
+	}
+	m_maskTexture.draw(glow);
+}
+
+void Flashlight::buildLightCone(sf::Vector2f origin,
+								float dirAngle,
+								float halfAperture) 
+{
 	float flicker = 1.f + .03f * std::sin(m_clock.getElapsedTime().asSeconds() * 7.f);
 	float r		  = m_radius * flicker;
 
 	const int SEGMENTS = 64;
 	sf::VertexArray cone(sf::PrimitiveType::Triangles, SEGMENTS * 3);
 
-	cone[0].position = center;
-	cone[0].color = sf::Color(255,240,200);
-
 	for (int i = 0; i < SEGMENTS; ++i) {
-		float angle0 = i * 2.f * M_PI / SEGMENTS;
-		float angle1 = (i + 1) * 2.f * M_PI / SEGMENTS;
+		float t0 = static_cast<float>(i) / SEGMENTS;
+		float t1 = static_cast<float>(i + 1) / SEGMENTS;
 
-		cone[i*3 + 0].position = center;
+		float angle0 = dirAngle - halfAperture + t0 * 2.f * halfAperture;
+		float angle1 = dirAngle - halfAperture + t1 * 2.f * halfAperture;
+
+		cone[i*3 + 0].position = origin;
 		cone[i*3 + 0].color = sf::Color(255,240,200);
 		cone[i*3 + 1].position = {
-			center.x + r * std::cos(angle0),
-			center.y + r * std::sin(angle0)
+			origin.x + r * std::cos(angle0),
+			origin.y + r * std::sin(angle0)
 		};
 		cone[i*3 + 1].color = sf::Color::Black;
+
 		cone[i*3 + 2].position = {
-			center.x + r * std::cos(angle1),
-			center.y + r * std::sin(angle1)
+			origin.x + r * std::cos(angle1),
+			origin.y + r * std::sin(angle1)
 		};
 		cone[i*3 + 2].color = sf::Color::Black;
 	}
@@ -42,10 +70,24 @@ void Flashlight::buildLightCone(sf::Vector2f center) {
 	m_maskTexture.draw(cone);
 }
 
-void Flashlight::update(sf::Vector2f playerWorldPosition, const sf::View& cameraView) {
+void Flashlight::update(sf::Vector2f playerWorldPosition, 
+						const sf::View& cameraView,
+						sf::RenderWindow& window) 
+{
+	sf::Vector2i mousePixels = sf::Mouse::getPosition(window);
+	sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixels, cameraView);
+
+	sf::Vector2f dir = mouseWorld - playerWorldPosition;
+	float angle = std::atan2(dir.y, dir.x);
+
+	float halfAperture = 50.f * M_PI / 180.f;
+
 	m_maskTexture.setView(cameraView);
 	m_maskTexture.clear(sf::Color::Black);
-	buildLightCone(playerWorldPosition);
+
+	buildAmbientGlow(playerWorldPosition);
+	buildLightCone(playerWorldPosition, angle, halfAperture);
+
 	m_maskTexture.display();
 }
 

@@ -90,7 +90,7 @@ void Game::update(float dt) {
     m_particles.emit(m_player.getPosition(), dt);
     m_particles.update(dt);
     m_camera.follow(m_player.getPosition());
-    m_flashlight.update(m_player.getPosition(), m_camera.getView());
+    m_flashlight.update(m_player.getPosition(), m_camera.getView(), m_window);
 
     // Radius of the flashlight reduces with low energy
     float flickerRadius = 160.f * (0.5f + 0.5f * m_energy.getPercentage());
