@@ -4,6 +4,19 @@
 #include <stdexcept>
 #define M_PI 3.14159265358979323846
 
+////////////////////////////////////////////////
+/// Cone with a narrower aperture → more tension, less visibility
+/// float halfAperture = 35.f * (3.14159265f / 180.f);
+/// 
+/// 
+/// Cone with a wider aperture → more comfortable, less atmospheric
+/// float halfAperture = 70.f * (3.14159265f / 180.f);
+/// 
+/// 
+/// Cone with an aperture that narrows as energy depletes → more tension, encourages energy conservation
+/// float halfAperture = (30.f + 20.f * energyPercent) * (3.14159265f / 180.f);
+////////////////////////////////////////////////
+
 Flashlight::Flashlight(sf::Vector2u windowSize, float radius)
 	: m_radius(radius)
 {

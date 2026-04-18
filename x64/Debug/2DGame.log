@@ -1,8 +1,8 @@
-﻿  Flashlight.cpp
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(21,12): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(22,12): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(83,21): warning C4305: 'inicializando': truncamiento de 'double' a 'float'
-  Game.cpp
+﻿  Game.cpp
+  Map.cpp
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp(121,14): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
+  Player.cpp
+  Renderer.cpp
   main.cpp
   Generando código...
   2DGame.vcxproj -> C:\Users\Usuario\Desktop\C++\2DGame\2DGame\x64\Debug\2DGame.exe

@@ -37,10 +37,28 @@ void Renderer::bakeMap(const Map& map) {
 
 	for (int y = 0; y < map.getHeight(); ++y) {
 		for (int x = 0; x < map.getWidth(); ++x) {
-			if (map.getTile(x, y) == TileType::Wall)
+			TileType tile = map.getTile(x, y);
+
+			if (tile == TileType::Wall) {
 				m_tileShape.setFillColor(sf::Color(30, 30, 50));
-			else
-				m_tileShape.setFillColor(sf::Color(70, 70, 100));
+			}
+			else {
+				RoomType rtype = map.getRoomTypeAt(x, y);
+				switch (rtype) {
+				case RoomType::Storage:
+					m_tileShape.setFillColor(sf::Color(50, 80, 60));
+					break;
+				case RoomType::Danger:
+					m_tileShape.setFillColor(sf::Color(80, 40, 40));
+					break;
+				case RoomType::Control:
+					m_tileShape.setFillColor(sf::Color(40, 60, 90));
+					break;
+				default:
+					m_tileShape.setFillColor(sf::Color(70,70,100));
+					break;
+				}
+			}
 
 			m_tileShape.setPosition(toPixels(x, y));
 			m_mapTexture.draw(m_tileShape);
@@ -48,7 +66,6 @@ void Renderer::bakeMap(const Map& map) {
 	}
 
 	m_mapTexture.display();
-
 	m_mapSprite = sf::Sprite(m_mapTexture.getTexture());
 
 }

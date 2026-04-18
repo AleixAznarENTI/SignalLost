@@ -12,93 +12,8 @@ Map::Map(int width, int height)
 void Map::fillWithWalls() {
 	for (auto& row : m_grid)
 		std::fill(row.begin(), row.end(), TileType::Wall);
-}
-
-void Map::generate(int steps) {
-	fillWithWalls();
-
-	int x = m_width / 2;
-	int y = m_height / 2;
-
-	const int dx[] = { 0, 0, -1, 1 };
-	const int dy[] = { -1, 1, 0, 0 };
-
-	for (int i = 0; i < steps; ++i) {
-		m_grid[y][x] = TileType::Floor;
-
-		int dir = rand() % 4;
-		int nx = x + dx[dir];
-		int ny = y + dy[dir];
-
-		if (nx > 0 && nx < m_width - 1 && ny > 0 && ny < m_height - 1) {
-			x = nx;
-			y = ny;
-		}
-	}
-
-	m_startPosition = findOpenSpot();
-	
-	placeSignal();
-
-	placeBatteries(6, 24.f);
-}
-
-void Map::placeBatteries(int count, float tileSize) {
+	m_rooms.clear();
 	m_batteries.clear();
-
-	const float minDistFromStart = 5.f;
-
-	int placed = 0;
-	int attempts = 0;
-
-	while (placed < count && attempts < 10000) {
-		++attempts;
-
-		int x = rand() % (m_width - 2) + 1;
-		int y = rand() % (m_height - 2) + 1;
-
-		if (m_grid[y][x] != TileType::Floor) continue;
-
-		float dist = std::sqrt(
-			std::pow(x - m_startPosition.x, 2.f) +
-			std::pow(y - m_startPosition.y, 2.f)
-		);
-
-		if (dist < minDistFromStart) continue;
-
-		if (sf::Vector2i(x, y) == m_signalPosition) continue;
-
-		sf::Vector2f worldPos(
-			(x + 0.5f) * tileSize,
-			(y + 0.5f) * tileSize
-		);
-		
-		m_batteries.emplace_back(worldPos, 25.f);
-		++placed;
-	}
-
-}
-
-void Map::placeSignal() {
-	float minDist = 15.f;
-	float maxDist = -1.f;
-	m_signalPosition = m_startPosition;
-
-	for (int row = 0; row < m_height; ++row) {
-		for (int col = 0; col < m_width; ++col) {
-			if (m_grid[row][col] != TileType::Floor) continue;
-
-			float dist = std::sqrt(
-				std::pow(col - m_startPosition.x, 2.f) +
-				std::pow(row - m_startPosition.y, 2.f)
-			);
-
-			if (dist > minDist && dist > maxDist) {
-				maxDist = dist;
-				m_signalPosition = { col, row };
-			}
-		}
-	}
 }
 
 TileType Map::getTile(int x, int y) const {
@@ -107,18 +22,133 @@ TileType Map::getTile(int x, int y) const {
 	return m_grid[y][x];
 }
 
-sf::Vector2i Map::findOpenSpot() const {
-	for (int y = 1; y < m_height - 1; ++y) {
-		for (int x = 1; x < m_width - 1; ++x) {
-			if (m_grid[y][x] != TileType::Floor) continue;
+RoomType Map::getRoomTypeAt(int tx, int ty) const {
+	for (const auto& room : m_rooms) {
+		if (room.contains(tx, ty))
+			return room.type;
+	}
+	return RoomType::Normal; // Default type for non-room tiles
+}
 
-			bool open = getTile(x, y - 1) == TileType::Floor
-				&& getTile(x, y + 1) == TileType::Floor
-				&& getTile(x - 1, y) == TileType::Floor
-				&& getTile(x + 1, y) == TileType::Floor;
-
-			if (open) { return { x, y }; }
+void Map::carveRoom(const Room& room) {
+	for (int y = room.y; y < room.y + room.h; ++y) {
+		for (int x = room.x; x < room.x + room.w; ++x) {
+			m_grid[y][x] = TileType::Floor;
 		}
 	}
-	return { m_width/2, m_height/2 }; // Return the center position if no open spot is found
 }
+
+void Map::carveCorridor(sf::Vector2i a, sf::Vector2i b) {
+	int x = a.x;
+	int y = a.y;
+
+	while (x != b.x) {
+		m_grid[y][x] = TileType::Floor;
+		x += (b.x > x) ? 1 : -1;
+	}
+
+	while (y != b.y) {
+		m_grid[y][x] = TileType::Floor;
+		y += (b.y > y) ? 1 : -1;
+	}
+
+	m_grid[y][x] = TileType::Floor;
+}
+
+void Map::generate(int roomAttempts) {
+	fillWithWalls();
+
+	auto randInt = [](int min, int max) {
+		return min + rand() % (max - min + 1);
+	};
+
+	for (int i = 0; i < roomAttempts; ++i) {
+		Room candidate;
+		candidate.w = randInt(8, 16);
+		candidate.h = randInt(4, 9);
+		candidate.x = randInt(1, m_width - candidate.w - 1);
+		candidate.y = randInt(1, m_height - candidate.h - 1);
+
+		bool valid = true;
+		for (const auto& existing : m_rooms) {
+			if (candidate.overlaps(existing)) {
+				valid = false;
+				break;
+			}
+		}
+
+		if (valid) {
+			carveRoom(candidate);
+			m_rooms.push_back(candidate);
+		}
+	}
+
+	for (size_t i = 1; i < m_rooms.size(); ++i) {
+		carveCorridor(m_rooms[i - 1].center(), m_rooms[i].center());
+	}
+
+	assignRoomTypes();
+
+	m_startPosition = m_rooms.empty()
+		? sf::Vector2i(m_width / 2, m_height / 2)
+		: m_rooms.front().center();
+	
+	placeSignal();
+	placeBatteries(24.f);
+}
+
+void Map::assignRoomTypes() {
+	for (size_t i = 1; i + 1 < m_rooms.size(); ++i) {
+		int roll = rand() % 10;
+		if		(roll < 3) m_rooms[i].type = RoomType::Storage;
+		else if (roll < 5) m_rooms[i].type = RoomType::Danger;
+		else if (roll < 6) m_rooms[i].type = RoomType::Control;
+		else			   m_rooms[i].type = RoomType::Normal;
+	}
+}
+
+void Map::placeSignal() {
+	if (m_rooms.empty()) {
+		m_signalPosition = { m_width / 2, m_height / 2 };
+		return;
+	}
+
+	float maxDist = -1.f;
+	m_signalPosition = m_rooms.back().center();
+
+	for (const auto& room : m_rooms) {
+		sf::Vector2i c = room.center();
+		float dist = std::sqrt(
+			std::pow(c.x - m_startPosition.x, 2.f) +
+			std::pow(c.y - m_startPosition.y, 2.f)
+		);
+		if (dist > maxDist) {
+			maxDist = dist;
+			m_signalPosition = c;
+		}
+	}
+}
+
+void Map::placeBatteries(float tileSize) {
+	m_batteries.clear();
+
+	for (const auto& room : m_rooms) {
+		int count = (room.type == RoomType::Storage)
+			? 2 + rand() % 2
+			: rand() % 2;
+		
+		for (int i = 0; i < count; ++i) {
+			int tx = room.x + 1 + rand() % (room.w - 2);
+			int ty = room.y + 1 + rand() % (room.h - 2);
+
+			sf::Vector2f worldPos(
+				(tx + 0.5f) * tileSize,
+				(ty + 0.5f) * tileSize
+			);
+			m_batteries.emplace_back(worldPos, 25.f);
+		}
+	}
+
+}
+
+

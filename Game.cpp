@@ -84,17 +84,35 @@ void Game::update(float dt) {
 
     m_player.move(velocity, dt, m_map);
 
+
     // --- Systems ---
     m_energy.update(dt);
     m_audio.update(m_energy.getPercentage());
     m_particles.emit(m_player.getPosition(), dt);
     m_particles.update(dt);
     m_camera.follow(m_player.getPosition());
-    m_flashlight.update(m_player.getPosition(), m_camera.getView(), m_window);
 
-    // Radius of the flashlight reduces with low energy
+    sf::Vector2i playerTile(
+        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
+        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
+    );
+
+    RoomType currentRoom = m_map.getRoomTypeAt(playerTile.x, playerTile.y);
+
+    if (currentRoom == RoomType::Danger) 
+		m_energy.applyPenalty(15.f * dt);
+
     float flickerRadius = 160.f * (0.5f + 0.5f * m_energy.getPercentage());
+
+    if (currentRoom == RoomType::Danger) {
+        float dangerFlicker = 1.f + 0.15f * std::sin(
+			m_clock.getElapsedTime().asSeconds() * 15.f
+        );
+        m_flashlight.setRadius(flickerRadius * dangerFlicker);
+    }
+    // Radius of the flashlight reduces with low energy
     m_flashlight.setRadius(flickerRadius);
+    m_flashlight.update(m_player.getPosition(), m_camera.getView(), m_window);
 
     // --- Batteries ---
     for (auto& battery : m_batteries) {
@@ -114,6 +132,7 @@ void Game::update(float dt) {
     sf::Vector2f diff = m_player.getPosition() - m_signalPos;
 	float distSigSq = diff.x * diff.x + diff.y * diff.y;
 	float sigThreshSq = (TILE_SIZE * 1.2f) * (TILE_SIZE * 1.2f);
+    
     if (distSigSq < sigThreshSq)  m_state = GameState::Victory;
     if (m_energy.isDepleted())        m_state = GameState::GameOver;
 
