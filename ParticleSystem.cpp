@@ -1,0 +1,100 @@
+#include "ParticleSystem.h"
+#include <cstdlib>
+#include <cmath>
+#include <algorithm>
+#define M_PI 3.14159265358979323846
+
+////////////////////////////////////////////////
+///	Faster and short particles -> Wind Sensation
+///	float speed = randRange(20.f, 50.f);
+/// p.lifetime = randRange(0.5f, 1.5f);
+/// 
+/// 
+/// Slow and long particles -> Dust Sensation
+/// float speed = randRange(1.f, 5.f);
+/// p.lifetime = randRange(4.f, 8.f);
+/// 
+/// 
+/// More particles -> More intense sensation
+/// ParticleSystem particles(500);
+/// 
+/// 
+/// Warmer colors -> Oxided metal sensation
+/// vertices[i].color = sf::Color(255, 200, 150, alpha);
+////////////////////////////////////////////////
+
+
+
+ParticleSystem::ParticleSystem(int maxParticles) 
+	: m_maxParticles(maxParticles)
+{
+	m_particles.reserve(maxParticles);
+}
+
+float ParticleSystem::randRange(float min, float max) {
+	return min + (max - min) * (rand() / static_cast<float>(RAND_MAX));
+}
+
+void ParticleSystem::emit(sf::Vector2f origin, float dt) {
+	if (static_cast<int>(m_particles.size()) >= m_maxParticles)
+		return;
+
+	int toEmit = static_cast<int>(30.f * dt) + (randRange(0.f, 1.f) < 30.f * dt ? 1 : 0);
+
+	for (int i = 0; i < toEmit; ++i) {
+		if (static_cast<int>(m_particles.size()) >= m_maxParticles)
+			break;
+
+		Particle p;
+
+		float angle = randRange(0.f, 2.f * M_PI);
+		float radius = randRange(10.f, 100.f);
+		p.position = {
+			origin.x + radius * std::cos(angle),
+			origin.y + radius * std::sin(angle)
+		};
+
+		float speed = randRange(2.f, 12.f);
+		float velAngle = randRange(0.f, 2.f * M_PI);
+		p.velocity = {
+			speed * std::cos(velAngle),
+			speed * std::sin(velAngle)
+		};
+
+		p.lifetime = randRange(1.5f, 3.5f);
+		p.maxLife = p.lifetime;
+
+		m_particles.push_back(p);
+	}
+}
+
+void ParticleSystem::update(float dt) {
+	for (auto& p : m_particles) {
+		p.position += p.velocity * dt;
+		p.lifetime -= dt;
+
+		p.velocity *= 0.98f; // Damping
+	}
+
+	m_particles.erase(
+		std::remove_if(m_particles.begin(), m_particles.end(),
+			[](const Particle& p) {return p.lifetime <= 0.f; }),
+		m_particles.end()
+	);
+}
+
+void ParticleSystem::draw(sf::RenderWindow& window) {
+	sf::VertexArray vertices(sf::PrimitiveType::Points, m_particles.size());
+
+	for (size_t i = 0; i < m_particles.size(); ++i) {
+		const Particle& p = m_particles[i];
+
+		float lifeFraction = p.lifetime / p.maxLife;
+		auto alpha = static_cast<uint8_t>(lifeFraction * 180.f);
+
+		vertices[i].position = p.position;
+		vertices[i].color = sf::Color(200, 210, 255, alpha);
+	}
+
+	window.draw(vertices);
+}

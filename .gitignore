@@ -1,0 +1,15 @@
+# Compilación
+build/
+*.o
+*.a
+*.out
+bin/
+
+# IDEs
+.vscode/
+.idea/
+*.user
+
+# Sistema
+.DS_Store
+Thumbs.db
