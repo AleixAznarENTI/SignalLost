@@ -27,6 +27,7 @@
 
 ParticleSystem::ParticleSystem(int maxParticles) 
 	: m_maxParticles(maxParticles)
+	, m_vertices(sf::PrimitiveType::Points)
 {
 	m_particles.reserve(maxParticles);
 }
@@ -84,17 +85,16 @@ void ParticleSystem::update(float dt) {
 }
 
 void ParticleSystem::draw(sf::RenderWindow& window) {
-	sf::VertexArray vertices(sf::PrimitiveType::Points, m_particles.size());
+	m_vertices.resize(m_particles.size());
 
 	for (size_t i = 0; i < m_particles.size(); ++i) {
 		const Particle& p = m_particles[i];
-
 		float lifeFraction = p.lifetime / p.maxLife;
-		auto alpha = static_cast<uint8_t>(lifeFraction * 180.f);
+		uint8_t alpha = static_cast<uint8_t>(lifeFraction * 180.f);
 
-		vertices[i].position = p.position;
-		vertices[i].color = sf::Color(200, 210, 255, alpha);
+		m_vertices[i].position = p.position;
+		m_vertices[i].color = sf::Color(200, 210, 255, alpha);
 	}
 
-	window.draw(vertices);
+	window.draw(m_vertices);
 }

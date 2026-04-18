@@ -23,6 +23,7 @@ public:
 
 private:
 	std::vector<Particle> m_particles;
+	sf::VertexArray m_vertices;
 	int m_maxParticles;
 
 	static float randRange(float min, float max);

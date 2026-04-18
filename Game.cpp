@@ -101,9 +101,9 @@ void Game::update(float dt) {
         if (battery.isCollected()) continue;
 
         sf::Vector2f diff = m_player.getPosition() - battery.getPosition();
-        float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-
-        if (dist < TILE_SIZE * 0.8f) {
+		float distSq = diff.x * diff.x + diff.y * diff.y;
+		float thresholdSq = (TILE_SIZE * 0.8f) * (TILE_SIZE * 0.8f);
+        if (distSq < thresholdSq) {
             battery.collect();
             m_energy.restore(battery.getRestoreAmount());
             m_audio.playBatteryPickup();
@@ -112,9 +112,9 @@ void Game::update(float dt) {
 
     // --- End conditions ---
     sf::Vector2f diff = m_player.getPosition() - m_signalPos;
-    float        distSig = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-
-    if (distSig < TILE_SIZE * 1.2f)  m_state = GameState::Victory;
+	float distSigSq = diff.x * diff.x + diff.y * diff.y;
+	float sigThreshSq = (TILE_SIZE * 1.2f) * (TILE_SIZE * 1.2f);
+    if (distSigSq < sigThreshSq)  m_state = GameState::Victory;
     if (m_energy.isDepleted())        m_state = GameState::GameOver;
 
     // Reaction to state change (triggers only once)
@@ -132,7 +132,7 @@ void Game::render() {
     m_window.clear(sf::Color(10, 10, 20));
     m_window.setView(m_camera.getView());
 
-    m_renderer.drawMap(m_map);
+    m_renderer.drawMap();
     m_renderer.drawBatteries(m_batteries);
     m_renderer.drawSignal(m_signalPos);
     m_renderer.drawPlayer(m_player.getPosition());
@@ -154,6 +154,7 @@ void Game::reset() {
     m_audio.stopAll();
 
     m_map.generate(3000);
+	m_renderer.bakeMap(m_map);
 
     m_player = Player(sf::Vector2f(m_map.getStartPosition()) * TILE_SIZE, TILE_SIZE);
     m_energy = EnergySystem(100.f, 5.f);
