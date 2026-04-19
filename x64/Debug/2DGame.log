@@ -1,8 +1,4 @@
-﻿  Game.cpp
-  Map.cpp
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp(121,14): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
-  Player.cpp
-  Renderer.cpp
-  main.cpp
+﻿  HUD.cpp
+  TypewriterText.cpp
   Generando código...
   2DGame.vcxproj -> C:\Users\Usuario\Desktop\C++\2DGame\2DGame\x64\Debug\2DGame.exe

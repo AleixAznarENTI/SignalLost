@@ -3,6 +3,7 @@
 #include <ctime>
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 // ----------------------------------------------------------------
 // Constructor: initialize all systems, load resources, generate the map and position the player
@@ -17,8 +18,8 @@ Game::Game()
     , m_energy(100.f, 5.f)
     , m_hud(m_window, m_font)
     , m_particles(200)
-    , m_state(GameState::Playing)
-    , m_prevState(GameState::Playing)
+    , m_state(GameState::Intro)
+    , m_prevState(GameState::Intro)
 {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
@@ -30,8 +31,8 @@ Game::Game()
     if (!m_audio.loadAll("assets/"))
         throw std::runtime_error("Unable to load audio files");
 
-    reset();             // genera el mapa y posiciona al jugador
-    m_audio.playAmbient();
+    m_hud.onStateChanged(GameState::Intro);
+    initMap();
 }
 
 // ----------------------------------------------------------------
@@ -59,8 +60,15 @@ void Game::processInput() {
             m_window.close();
 
         if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+            if (key->code == sf::Keyboard::Key::Space &&
+                m_state == GameState::Intro) {
+                m_state = GameState::Playing;
+                m_hud.onStateChanged(GameState::Playing);
+                m_audio.playAmbient();
+            }
             if (key->code == sf::Keyboard::Key::R &&
-                m_state != GameState::Playing) {
+                m_state != GameState::Playing &&
+                m_state != GameState::Intro) {
                 reset();
             }
             if (key->code == sf::Keyboard::Key::Escape)
@@ -73,6 +81,8 @@ void Game::processInput() {
 // update: game logic
 // ----------------------------------------------------------------
 void Game::update(float dt) {
+    m_hud.update(dt, m_state);
+
     if (m_state != GameState::Playing) return;
 
     // --- Movement ---
@@ -140,8 +150,10 @@ void Game::update(float dt) {
     if (m_state != m_prevState) {
         if (m_state == GameState::Victory)  m_audio.playSignalFound();
         if (m_state == GameState::GameOver) m_audio.playGameOver();
+        m_hud.onStateChanged(m_state);
         m_prevState = m_state;
     }
+
 }
 
 // ----------------------------------------------------------------
@@ -149,39 +161,43 @@ void Game::update(float dt) {
 // ----------------------------------------------------------------
 void Game::render() {
     m_window.clear(sf::Color(10, 10, 20));
-    m_window.setView(m_camera.getView());
+    
+    if (m_state != GameState::Intro) {
+        m_window.setView(m_camera.getView());
 
-    m_renderer.drawMap();
-    m_renderer.drawBatteries(m_batteries);
-    m_renderer.drawSignal(m_signalPos);
-    m_renderer.drawPlayer(m_player.getPosition());
-    m_particles.draw(m_window);
+        m_renderer.drawMap();
+        m_renderer.drawBatteries(m_batteries);
+        m_renderer.drawSignal(m_signalPos);
+        m_renderer.drawPlayer(m_player.getPosition());
+        m_particles.draw(m_window);
 
-	m_flashlight.draw(m_window);        // always the last thing in the world layer, so it appears on top of everything else
+        m_flashlight.draw(m_window);
+    }
     m_hud.draw(m_energy.getPercentage(), m_state);
-
-    if (m_state != GameState::Playing)
-        drawEndScreen();
-
     m_window.display();
+}
+// ----------------------------------------------------------------
+// initMap: Generates map without interfering with main start
+// ----------------------------------------------------------------
+void Game::initMap() {
+    m_map.generate(3000);
+    m_renderer.bakeMap(m_map);
+    m_player = Player(sf::Vector2f(m_map.getStartPosition()) * TILE_SIZE, TILE_SIZE);
+    m_energy = EnergySystem(100.f, 5.f);
+    m_batteries = m_map.getBatteries();
+    m_signalPos = sf::Vector2f(m_map.getSignalPosition()) * TILE_SIZE;
 }
 
 // ----------------------------------------------------------------
 // reset: restarts the game by regenerating the map, repositioning the player, resetting energy and batteries, and playing ambient music
 // ----------------------------------------------------------------
 void Game::reset() {
+
     m_audio.stopAll();
-
-    m_map.generate(3000);
-	m_renderer.bakeMap(m_map);
-
-    m_player = Player(sf::Vector2f(m_map.getStartPosition()) * TILE_SIZE, TILE_SIZE);
-    m_energy = EnergySystem(100.f, 5.f);
-    m_batteries = m_map.getBatteries();
-    m_signalPos = sf::Vector2f(m_map.getSignalPosition()) * TILE_SIZE;
+    initMap();
     m_state = GameState::Playing;
     m_prevState = GameState::Playing;
-
+    m_hud.onStateChanged(GameState::Playing);
     m_audio.playAmbient();
 }
 

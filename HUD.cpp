@@ -1,9 +1,53 @@
 #include "HUD.h"
+#include <cstdint>
+#include <iostream>
 
 HUD::HUD(sf::RenderWindow& window, const sf::Font& font)
 	: m_window(window)
 	, m_font(font)
+	, m_typewriter(font, 18, 0.035f)
 {}
+
+void HUD::onStateChanged(GameState newState) {
+	switch (newState) {
+	case GameState::Intro:
+		m_typewriter.start(
+			"SIGNAL LOST\n\n"
+			"The abandoned station\n"
+			"keeps an SOS signal.\n\n"
+			"Find the signar before\n"
+			"you run out of energy.\n\n"
+			"WASD to move\n"
+			"Use MOUSE to control your flashlight\n\n"
+			"[ PRESS SPACE TO START ]"
+		);
+		break;
+	case GameState::Victory:
+		m_typewriter.start(
+			"SIGNAL FOUND\n\n"
+			"The rescuers have recieved\n"
+			"your ubication.\n\n"
+			"[ PRESS R TO RESTART ]"
+		);
+		break;
+	case GameState::GameOver:
+		m_typewriter.start(
+			"RUN OUT OF ENERGY\n\n"
+			"The shadows have consumed you.\n"
+			"No one won't ever know you were here.\n\n"
+			"[ PRESS R TO RESTART ]"
+		);
+		break;
+	default:
+		m_typewriter.reset();
+		break;
+	}
+}
+
+void HUD::update(float dt, GameState state) {
+	if (state != GameState::Playing)
+		m_typewriter.update(dt);
+}
 
 void HUD::drawEnergyBar(float energyPercentage) {
 	const float barwidth  = 200.f;
@@ -35,33 +79,62 @@ void HUD::drawEnergyBar(float energyPercentage) {
 	m_window.draw(border);
 
 	// Etiqueta
-	sf::Text label(m_font, "Energy", 11);
+	sf::Text label(m_font, "ENERGY", 11);
 	label.setFillColor(sf::Color(180, 180, 180));
 	label.setPosition({ margin, screenH - margin - barHeight - 16.f });
 	m_window.draw(label);
 }
 
-void HUD::drawCenteredText(const std::string& text, sf::Color color) {
-	sf::Text msg(m_font, text, 36);
-	msg.setFillColor(color);
-	msg.setStyle(sf::Text::Bold);
+void HUD::drawIntro() {
+	// Overlay oscuro
+	sf::RectangleShape overlay(sf::Vector2f(m_window.getSize()));
+	overlay.setFillColor(sf::Color(0, 0, 0, 210));
+	m_window.draw(overlay);
 
-	sf::FloatRect bounds = msg.getLocalBounds();
-	msg.setOrigin({ bounds.size.x / 2.f, bounds.size.y / 2.f });
-	msg.setPosition(sf::Vector2f(m_window.getSize()) / 2.f);
-	m_window.draw(msg);
+	// Posición central de la ventana
+	sf::Vector2f center(
+		m_window.getSize().x / 2.f,
+		m_window.getSize().y / 2.f
+	);
+
+	m_typewriter.draw(m_window, center, sf::Color(180, 220, 255));
+}
+
+void HUD::drawEndScreen(GameState state) {
+	sf::RectangleShape overlay(sf::Vector2f(m_window.getSize()));
+	overlay.setFillColor(sf::Color(0, 0, 0, 170));
+	m_window.draw(overlay);
+
+	sf::Vector2f center(
+		m_window.getSize().x / 2.f,
+		m_window.getSize().y /2.f
+	);
+
+	sf::Color textColor = (state == GameState::Victory)
+		? sf::Color(80, 255, 120) // Green
+		: sf::Color(220, 60, 60); // Red
+
+	m_typewriter.draw(m_window, center, textColor);
 }
 
 void HUD::draw(float energyPercent, GameState state) {
+
 	sf::View prev = m_window.getView();
 	m_window.setView(m_window.getDefaultView());
 
-	drawEnergyBar(energyPercent);
-
-	if (state == GameState::Victory)
-		drawCenteredText("SIGNAL FOUND", sf::Color(80, 255, 120));
-	else if (state == GameState::GameOver)
-		drawCenteredText("ENERGY DEPLETED", sf::Color(220, 60, 60));
-
+	switch (state) {
+	case GameState::Intro:
+		drawIntro();
+		break;
+	case GameState::Playing:
+		drawEnergyBar(energyPercent);
+		break;
+	case GameState::Victory:
+	case GameState::GameOver:
+		drawEnergyBar(energyPercent);
+		drawEndScreen(state);
+		break;
+	}
+	
 	m_window.setView(prev);
 }

@@ -27,7 +27,7 @@ private:
 	float			m_timer;
 	bool			m_finished;
 
-	sf::Text		m_sfText
+	sf::Text		m_sfText;
 
 };
 

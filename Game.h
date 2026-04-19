@@ -50,6 +50,7 @@
         void render();
 
         // --- Helpers ---
+        void initMap();
         void reset();
         void drawEndScreen();  // "Press R" text in victory/gameover
 

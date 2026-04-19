@@ -32,14 +32,25 @@ bool TypewriterText::update(float dt) {
 }
 
 void TypewriterText::draw(sf::RenderWindow& window,
-						  sf::Vector2f		position,
-						  sf::Color			color) 
+	sf::Vector2f      position,
+	sf::Color         color)
 {
-	m_sfText.setString(m_visible);
-	m_sfText.setFillColor(color);
+	if (m_visible.empty()) return;
+
+	m_sfText.setString(m_full);
+	m_sfText.setOrigin({ 0.f, 0.f });
+	m_sfText.setPosition({ 0.f, 0.f });
 
 	sf::FloatRect bounds = m_sfText.getLocalBounds();
-	m_sfText.setOrigin({ bounds.size.x / 2.f, bounds.size.y / 2.f });
+
+	m_sfText.setOrigin({
+		bounds.position.x + bounds.size.x / 2.f,
+		bounds.position.y + bounds.size.y / 2.f
+		});
+
+	// Ahora sí ponemos el texto visible
+	m_sfText.setString(m_visible);
+	m_sfText.setFillColor(color);
 	m_sfText.setPosition(position);
 
 	window.draw(m_sfText);
