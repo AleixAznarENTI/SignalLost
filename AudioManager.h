@@ -18,7 +18,7 @@ public:
 	void playSignalFound();
 	void playGameOver();
 	void playBatteryPickup();
-
+	void playTypewriterClick();
 	void stopAll();
 private:
 	sf::Music m_ambient;
@@ -27,6 +27,8 @@ private:
 	sf::SoundBuffer m_signalBuffer;
 	sf::SoundBuffer m_gameoverBuffer;
 	sf::SoundBuffer m_batteryBuffer;
+	sf::SoundBuffer m_typewriterBuffer;
+	std::optional<sf::Sound> m_typewriterSound;
 	std::optional<sf::Sound> m_signalSound;
 	std::optional<sf::Sound> m_gameOver;
 	std::optional<sf::Sound> m_batterySound;

@@ -16,7 +16,7 @@ Game::Game()
     , m_renderer(m_window, TILE_SIZE)
     , m_flashlight(m_window.getSize(), 160.f)
     , m_energy(100.f, 5.f)
-    , m_hud(m_window, m_font)
+    , m_hud(m_window, m_font, m_audio)
     , m_particles(200)
     , m_state(GameState::Intro)
     , m_prevState(GameState::Intro)
@@ -59,7 +59,7 @@ void Game::processInput() {
         if (event->is<sf::Event::Closed>())
             m_window.close();
 
-        if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+         if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
             if (key->code == sf::Keyboard::Key::Space &&
                 m_state == GameState::Intro) {
                 m_state = GameState::Playing;
@@ -169,9 +169,9 @@ void Game::render() {
         m_renderer.drawBatteries(m_batteries);
         m_renderer.drawSignal(m_signalPos);
         m_renderer.drawPlayer(m_player.getPosition());
-        m_particles.draw(m_window);
 
         m_flashlight.draw(m_window);
+        m_particles.draw(m_window);
     }
     m_hud.draw(m_energy.getPercentage(), m_state);
     m_window.display();

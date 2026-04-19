@@ -29,10 +29,17 @@ bool AudioManager::loadAll(const std::string& assetsPath) {
 		std::cerr << "Failed to load battery.ogg\n";
 		ok = false;
 	}
+	if (!m_typewriterBuffer.loadFromFile(assetsPath + "typewriter.ogg")) {
+		std::cerr << "Failed to load typewriter.ogg\n";
+		ok = false;
+	}
 
 	m_signalSound.emplace(m_signalBuffer);
 	m_gameOver.emplace(m_gameoverBuffer);
 	m_batterySound.emplace(m_batteryBuffer);
+	m_typewriterSound.emplace(m_typewriterBuffer);
+
+	m_typewriterSound.value().setVolume(60.f);
 
 	m_ambient.setLooping(true);
 	m_ambient.setVolume(40.f);
@@ -85,11 +92,17 @@ void AudioManager::playBatteryPickup() {
 	m_batterySound.value().play();
 }
 
+void AudioManager::playTypewriterClick() {
+	m_typewriterSound.value().stop();
+	m_typewriterSound.value().play();
+}
+
 void AudioManager::stopAll() {
 	m_ambient.stop();
 	m_heartbeat.stop();
 	m_signalSound.value().stop();
 	m_gameOver.value().stop();
 	m_batterySound.value().stop();
+	m_typewriterSound.value().stop();
 	m_heartbeatPlaying = false;
 }

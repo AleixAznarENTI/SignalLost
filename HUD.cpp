@@ -2,13 +2,19 @@
 #include <cstdint>
 #include <iostream>
 
-HUD::HUD(sf::RenderWindow& window, const sf::Font& font)
+HUD::HUD(sf::RenderWindow& window, const sf::Font& font, AudioManager& audio)
 	: m_window(window)
 	, m_font(font)
+	, m_audio(audio)
 	, m_typewriter(font, 18, 0.035f)
 {}
 
 void HUD::onStateChanged(GameState newState) {
+
+	m_typewriter.sestOnCharCallback([this]() {
+		m_audio.playTypewriterClick();
+		});
+
 	switch (newState) {
 	case GameState::Intro:
 		m_typewriter.start(

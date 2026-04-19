@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <functional>
 class TypewriterText
 {
 public:
@@ -16,6 +17,9 @@ public:
 
 	bool isFinished() const { return m_finished; }
 	void reset()			{ m_visible.clear(); m_timer = 0.f; m_finished = false; }
+	void sestOnCharCallback(std::function<void()> callback) {
+		m_onChar = callback;
+	}
 
 private:
 	const sf::Font& m_font;
@@ -28,6 +32,8 @@ private:
 	bool			m_finished;
 
 	sf::Text		m_sfText;
+
+	std::function<void()> m_onChar;
 
 };
 

@@ -20,13 +20,20 @@ void TypewriterText::start(const std::string& fullText) {
 bool TypewriterText::update(float dt) {
 	if (m_finished) return true;
 
-	m_timer += dt;
+	size_t prevSize = m_visible.size();
 
+	m_timer += dt;
 	size_t targetVisible = static_cast<size_t>(m_timer / m_charDelay);
 	targetVisible = std::min(targetVisible, m_full.size());
-
 	m_visible = m_full.substr(0, targetVisible);
 	m_finished = (targetVisible >= m_full.size());
+
+	if (m_visible.size() > prevSize && m_onChar) {
+		char newChar = m_full[m_visible.size() - 1];
+		if (newChar != '\n') {
+			m_onChar();
+		}
+	}
 
 	return m_finished;
 }

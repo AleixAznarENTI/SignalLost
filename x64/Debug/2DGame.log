@@ -1,4 +1,7 @@
-﻿  HUD.cpp
+﻿  AudioManager.cpp
+  Game.cpp
+  HUD.cpp
   TypewriterText.cpp
+  main.cpp
   Generando código...
   2DGame.vcxproj -> C:\Users\Usuario\Desktop\C++\2DGame\2DGame\x64\Debug\2DGame.exe
