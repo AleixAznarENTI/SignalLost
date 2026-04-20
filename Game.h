@@ -13,6 +13,7 @@
 #include "ParticleSystem.h"
 #include "Battery.h"
 #include "GameState.h"
+#include "Minimap.h"
 
     class Game {
     public:
@@ -36,6 +37,7 @@
         HUD            m_hud;
         AudioManager   m_audio;
         ParticleSystem m_particles;
+        Minimap        m_minimap;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;

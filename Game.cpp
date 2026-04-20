@@ -20,6 +20,7 @@ Game::Game()
     , m_particles(200)
     , m_state(GameState::Intro)
     , m_prevState(GameState::Intro)
+    , m_minimap(m_window, 3.f, 16.f)
 {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
@@ -107,7 +108,7 @@ void Game::update(float dt) {
         static_cast<int>(m_player.getPosition().y / TILE_SIZE)
     );
     RoomType currentRoom = m_map.getRoomTypeAt(playerTile.x, playerTile.y);
-
+    m_minimap.revealAt(playerTile, m_map);
     // Danger room effects
     if (currentRoom == RoomType::Danger) 
 		m_energy.applyPenalty(15.f * dt);
@@ -180,6 +181,10 @@ void Game::render() {
         m_particles.draw(m_window);
     }
     m_hud.draw(m_energy.getPercentage(), m_state);
+
+    if (m_state == GameState::Playing)
+        m_minimap.draw(m_player.getPosition(), TILE_SIZE);
+
     m_window.display();
 }
 // ----------------------------------------------------------------
@@ -188,6 +193,7 @@ void Game::render() {
 void Game::initMap() {
     m_map.generate(3000);
     m_renderer.bakeMap(m_map);
+    m_minimap.bake(m_map);
     m_player = Player(sf::Vector2f(m_map.getStartPosition()) * TILE_SIZE, TILE_SIZE);
     m_energy = EnergySystem(100.f, 5.f);
     m_batteries = m_map.getBatteries();
