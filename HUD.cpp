@@ -21,7 +21,7 @@ void HUD::onStateChanged(GameState newState) {
 			"SIGNAL LOST\n\n"
 			"The abandoned station\n"
 			"keeps an SOS signal.\n\n"
-			"Find the signar before\n"
+			"Find the signal before\n"
 			"you run out of energy.\n\n"
 			"WASD to move\n"
 			"Use MOUSE to control your flashlight\n\n"
@@ -32,7 +32,7 @@ void HUD::onStateChanged(GameState newState) {
 		m_typewriter.start(
 			"SIGNAL FOUND\n\n"
 			"The rescuers have recieved\n"
-			"your ubication.\n\n"
+			"your location.\n\n"
 			"[ PRESS R TO RESTART ]"
 		);
 		break;
@@ -134,6 +134,7 @@ void HUD::draw(float energyPercent, GameState state) {
 		break;
 	case GameState::Playing:
 		drawEnergyBar(energyPercent);
+		drawSignalIndicator();
 		break;
 	case GameState::Victory:
 	case GameState::GameOver:
@@ -143,4 +144,95 @@ void HUD::draw(float energyPercent, GameState state) {
 	}
 	
 	m_window.setView(prev);
+}
+
+void HUD::setSignalInfo(sf::Vector2f playerPos,
+						sf::Vector2f signalPos,
+						bool		 inControlRoom) 
+{
+	m_showIndicator = inControlRoom;
+	if (!inControlRoom) return;
+
+	sf::Vector2f diff = signalPos - playerPos;
+	m_signalAngle	  = std::atan2(diff.y, diff.x);
+	m_signalDistance  = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+}
+
+void HUD::drawSignalIndicator() {
+	if (!m_showIndicator) return;
+
+	// Indicator position: top right corner
+	float screenW = static_cast<float>(m_window.getSize().x);
+	float margin = 20.f;
+	sf::Vector2f center(screenW - 60.f, 60.f);
+
+	// --- Background circle ---
+	sf::CircleShape bg(40.f);
+	bg.setOrigin({ 40.f, 40.f });
+	bg.setPosition(center);
+	bg.setFillColor(sf::Color(0, 0, 0, 160));
+	bg.setOutlineColor(sf::Color(40, 60, 90, 200));
+	bg.setOutlineThickness(2.f);
+	m_window.draw(bg);
+
+	// --- Directional Arrow ---
+	float arrowLen = 28.f;
+	sf::Vector2f tip(
+		center.x + arrowLen * std::cos(m_signalAngle),
+		center.y + arrowLen * std::sin(m_signalAngle)
+	);
+
+	sf::Vertex line[] = {
+		sf::Vertex(center, sf::Color(80, 255, 120)),
+		sf::Vertex(tip,	   sf::Color(80,255,120))
+	};
+	m_window.draw(line, 2, sf::PrimitiveType::Lines);
+
+	float headLen = 8.f;
+	float headAngle = 0.5f; // radians (28 degrees aprox)
+
+	sf::Vector2f head1(
+		tip.x - headLen * std::cos(m_signalAngle - headAngle),
+		tip.y - headLen * std::sin(m_signalAngle - headAngle)
+	);
+
+	sf::Vector2f head2(
+		tip.x - headLen * std::cos(m_signalAngle + headAngle),
+		tip.y - headLen * std::sin(m_signalAngle + headAngle)
+	);
+
+	sf::Vertex arrow1[] = {
+		sf::Vertex(tip,	  sf::Color(80,255,120)),
+		sf::Vertex(head1, sf::Color(80,255,120))
+	};
+	sf::Vertex arrow2[] = {
+	sf::Vertex(tip,	  sf::Color(80,255,120)),
+	sf::Vertex(head1, sf::Color(80,255,120))
+	};
+	m_window.draw(arrow1, 2, sf::PrimitiveType::Lines);
+	m_window.draw(arrow2, 2, sf::PrimitiveType::Lines);
+	
+	// --- Distance in tiles ---
+	float distInTiles = m_signalDistance / 24.f; //TILE_SIZE = 24
+	std::string distText = std::to_string(static_cast<int>(distInTiles));
+
+	sf::Text dist(m_font, distText, 11);
+	dist.setFillColor(sf::Color(80, 255, 120, 200));
+
+	sf::FloatRect b = dist.getLocalBounds();
+	dist.setOrigin({ b.position.x + b.size.x / 2.f,
+					 b.position.y + b.size.y / 2.f });
+	dist.setPosition({ center.x, center.y + 52.f });
+	m_window.draw(dist);
+
+	// --- "CONTROL" label ---
+	sf::Text label(m_font, "CONTROL", 9);
+	label.setFillColor(sf::Color(40, 60, 90, 220));
+
+	sf::FloatRect lb = label.getLocalBounds();
+	label.setOrigin({ lb.position.x + lb.size.x / 2.f,
+					  lb.position.y + lb.size.y / 2.f });
+	label.setPosition({ center.x, center.y - 52.f });
+	m_window.draw(label);
+
 }

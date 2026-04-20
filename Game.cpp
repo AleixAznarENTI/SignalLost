@@ -106,11 +106,17 @@ void Game::update(float dt) {
         static_cast<int>(m_player.getPosition().x / TILE_SIZE),
         static_cast<int>(m_player.getPosition().y / TILE_SIZE)
     );
-
     RoomType currentRoom = m_map.getRoomTypeAt(playerTile.x, playerTile.y);
 
+    // Danger room effects
     if (currentRoom == RoomType::Danger) 
 		m_energy.applyPenalty(15.f * dt);
+
+    m_hud.setSignalInfo(
+        m_player.getPosition(),
+        m_signalPos,
+        currentRoom == RoomType::Control
+    );
 
     float flickerRadius = 160.f * (0.5f + 0.5f * m_energy.getPercentage());
 
@@ -192,7 +198,6 @@ void Game::initMap() {
 // reset: restarts the game by regenerating the map, repositioning the player, resetting energy and batteries, and playing ambient music
 // ----------------------------------------------------------------
 void Game::reset() {
-
     m_audio.stopAll();
     initMap();
     m_state = GameState::Playing;
