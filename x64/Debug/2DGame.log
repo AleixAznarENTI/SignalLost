@@ -1,8 +1,12 @@
-﻿  Game.cpp
+﻿  AudioManager.cpp
+  Camera.cpp
+  Game.cpp
+  HUD.cpp
   ParticleSystem.cpp
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\ParticleSystem.cpp(51,36): warning C4305: 'argumento': truncamiento de 'double' a 'float'
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\ParticleSystem.cpp(59,39): warning C4305: 'argumento': truncamiento de 'double' a 'float'
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\ParticleSystem.cpp(168,36): warning C4305: 'argumento': truncamiento de 'double' a 'float'
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\ParticleSystem.cpp(196,36): warning C4305: 'argumento': truncamiento de 'double' a 'float'
   Renderer.cpp
   main.cpp
   Generando código...

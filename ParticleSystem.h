@@ -27,6 +27,8 @@ public:
 
 	void emitBattery(sf::Vector2f origin, float dt);
 
+	void emitEnemy(sf::Vector2f origin, bool isChasing, float dt);
+
 private:
 	std::vector<Particle> m_particles;
 	sf::VertexArray m_vertices;

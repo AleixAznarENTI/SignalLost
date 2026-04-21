@@ -92,12 +92,15 @@ void Game::update(float dt) {
     updateMovement(dt);
     updateRoomEffects(dt);
     updateHazardEffects(dt);
+    updateEnemies(dt);
     updateBatteries(dt);
+    updateEnemyProximity();
     checkEndConditions();
 
     // Sistemas que dependen de todo lo anterior
     m_particles.emit(m_player.getPosition(), dt);
     m_particles.update(dt);
+    m_camera.updateShake(dt);
     m_camera.follow(m_player.getPosition());
     m_flashlight.update(m_player.getPosition(),
         m_camera.getView(),
@@ -114,6 +117,71 @@ void Game::updateMovement(float dt) {
     m_player.move(velocity, dt, m_map);
     m_energy.update(dt);
     m_audio.update(m_energy.getPercentage());
+    for (const auto& enemy : m_enemies) {
+        if (enemy.catchesPlayer(m_player.getPosition(), TILE_SIZE)) {
+            m_camera.triggerShake(0.5f, 10.f);
+            m_state = GameState::GameOver;
+            m_hud.triggerGameOver();
+            m_audio.playGameOver();
+            return;
+        }
+    }
+}
+
+void Game::updateEnemies(float dt) {
+    for (auto& enemy : m_enemies) {
+        enemy.update(
+            dt,
+            m_player.getPosition(),
+            m_map,
+            m_currentHazard == HazardType::Radiation
+        );
+
+        m_particles.emitEnemy(
+            enemy.getPosition(),
+            enemy.getState() == EnemyState::Chase,
+            dt
+        );
+    }
+}
+
+void Game::updateEnemyProximity() {
+    if (m_enemies.empty()) {
+        m_hud.setEnemyProximity(0.f);
+        return;
+    }
+
+    float minDist = std::numeric_limits<float>::max();
+    for (const auto& enemy : m_enemies) {
+        sf::Vector2f diff = m_player.getPosition() - enemy.getPosition();
+        float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+        minDist = std::min(minDist, dist);
+    }
+
+    const float startRange = 250.f;
+    const float fullRange = 80.f;
+
+    float alpha = 0.f;
+    if (minDist < startRange) {
+        alpha = 1.f - (minDist - fullRange) / (startRange - fullRange);
+        alpha = std::max(0.f, std::min(1.f, alpha));
+    }
+
+    m_hud.setEnemyProximity(alpha);
+    m_audio.updateStalkerMusic(alpha);
+
+    bool anyChasing = false;
+    for (const auto& enemy : m_enemies)
+        if (enemy.getState() == EnemyState::Chase) { anyChasing = true; break; }
+
+    if (anyChasing && !m_enemyAlertPlayed) {
+        m_audio.playEnemyAlert();
+        m_enemyAlertPlayed = true;
+    }
+    else if (!anyChasing) {
+        m_enemyAlertPlayed = false;
+    }
+
 }
 
 void Game::updateRoomEffects(float dt) {
@@ -256,6 +324,7 @@ void Game::render() {
         m_renderer.drawMap();
         m_renderer.drawBatteries(m_batteries);
         m_renderer.drawSignal(m_signalPos);
+        m_renderer.drawEnemies(m_enemies);
         m_renderer.drawPlayer(m_player.getPosition());
 
         m_flashlight.draw(m_window);
@@ -280,6 +349,29 @@ void Game::initMap() {
     m_energy = EnergySystem(100.f, 5.f);
     m_batteries = m_map.getBatteries();
     m_signalPos = sf::Vector2f(m_map.getSignalPosition()) * TILE_SIZE;
+    spawnEnemies();
+}
+
+void Game::spawnEnemies() {
+    m_enemies.clear();
+
+    const auto& rooms = m_map.getRooms();
+    sf::Vector2i startRoom = m_map.getStartPosition();
+    sf::Vector2i signalRoom = m_map.getSignalPosition();
+
+    for (const auto& room : rooms) {
+        sf::Vector2i center = room.center();
+
+        if (center == startRoom || center == signalRoom) continue;
+
+        if (rand() % 10 < 3) {
+            sf::Vector2f worldPos(
+                (center.x + 0.5f) * TILE_SIZE,
+                (center.y + 0.5f) * TILE_SIZE
+            );
+            m_enemies.emplace_back(worldPos, TILE_SIZE);
+        }
+    }
 }
 
 // ----------------------------------------------------------------

@@ -33,19 +33,33 @@ bool AudioManager::loadAll(const std::string& assetsPath) {
 		std::cerr << "Failed to load typewriter.ogg\n";
 		ok = false;
 	}
+	if (!m_alertBuffer.loadFromFile(assetsPath + "alert.ogg")) {
+		std::cerr << "Error: alert.ogg\n";
+		ok = false;
+	}
+	if (!m_stalkerMusic.openFromFile(assetsPath + "stalker.ogg")) {
+		std::cerr << "Error: stalker.ogg\n";
+		ok = false;
+	}
 
 	m_signalSound.emplace(m_signalBuffer);
 	m_gameOver.emplace(m_gameoverBuffer);
 	m_batterySound.emplace(m_batteryBuffer);
 	m_typewriterSound.emplace(m_typewriterBuffer);
+	m_alertSound.emplace(m_alertBuffer);
 
 	m_typewriterSound.value().setVolume(60.f);
+	m_alertSound.value().setVolume(70.f);
 
 	m_ambient.setLooping(true);
 	m_ambient.setVolume(40.f);
 
 	m_heartbeat.setLooping(true);
 	m_heartbeat.setVolume(0.f);
+
+	m_stalkerMusic.setLooping(true);
+	m_stalkerMusic.setVolume(0.f);
+	m_stalkerMusic.play();
 
 	return ok;
 }
@@ -54,6 +68,15 @@ void AudioManager::playAmbient() {
 	m_ambient.play();
 	m_heartbeat.play();
 	m_heartbeatPlaying = true;
+}
+
+void AudioManager::playEnemyAlert() {
+	m_alertSound.value().stop();
+	m_alertSound.value().play();
+}
+
+void AudioManager::updateStalkerMusic(float proximityAlpha) {
+	m_stalkerMusic.setVolume(proximityAlpha * 50.f);
 }
 
 void AudioManager::updateHeartbeat(float energyPercent) {
@@ -100,9 +123,11 @@ void AudioManager::playTypewriterClick() {
 void AudioManager::stopAll() {
 	m_ambient.stop();
 	m_heartbeat.stop();
+	m_stalkerMusic.stop();
 	m_signalSound.value().stop();
 	m_gameOver.value().stop();
 	m_batterySound.value().stop();
 	m_typewriterSound.value().stop();
 	m_heartbeatPlaying = false;
+	m_alertPlayerd = false;
 }

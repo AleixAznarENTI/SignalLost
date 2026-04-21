@@ -145,3 +145,39 @@ void Renderer::drawBatteries(const std::vector<Battery>& batteries) {
 		m_window.draw(pole);
 	}
 }
+
+void Renderer::drawEnemies(const std::vector<Enemy>& enemies) {
+	float time = m_clock.getElapsedTime().asSeconds();
+
+	for (const auto& enemy : enemies) {
+		sf::Vector2f pos = enemy.getPosition();
+
+		sf::Color bodyColor;
+		switch (enemy.getState()) {
+			case EnemyState::Patrol: bodyColor = sf::Color(120, 40, 40);  break;
+			case EnemyState::Chase:  bodyColor = sf::Color(255, 30, 30);  break;
+			case EnemyState::Search: bodyColor = sf::Color(180, 80, 80);  break;
+		}
+
+		float pulseSpeed = (enemy.getState() == EnemyState::Chase) ? 8.f : 2.f;
+		float pulse = std::abs(std::sin(time * pulseSpeed));
+
+		float haloR = m_tileSize * (1.2f + 0.3f * pulse);
+		sf::CircleShape halo(haloR);
+		halo.setOrigin({ haloR, haloR });
+		halo.setPosition(pos);
+		halo.setFillColor(sf::Color(
+				bodyColor.r, bodyColor.g, bodyColor.b,
+				static_cast<uint8_t>(20 + 20 * pulse)
+		));
+		m_window.draw(halo);
+
+		sf::CircleShape body(m_tileSize * 0.38f, 3);
+		body.setOrigin({ m_tileSize * 0.38f, m_tileSize * 0.38f });
+		body.setPosition(pos);
+		body.setFillColor(bodyColor);
+		body.setOutlineColor(sf::Color(255, 80, 80, 180));
+		body.setOutlineThickness(1.5f);
+		m_window.draw(body);
+	}
+}

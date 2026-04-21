@@ -1,10 +1,11 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include "Map.h"
 #include "Camera.h"
 #include "Battery.h"
-#include <vector>
+#include "Enemy.h"
 
 class Renderer
 {
@@ -18,6 +19,7 @@ public:
 	void drawPlayer(sf::Vector2f position);
 	void drawSignal(sf::Vector2f position);
 	void drawBatteries(const std::vector<Battery>& batteries);
+	void drawEnemies(const std::vector<Enemy>& enemies);
 
 private:
 	sf::RenderWindow& m_window;

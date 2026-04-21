@@ -186,7 +186,9 @@ void HUD::draw(float energyPercent, GameState state) {
 	
 	m_window.setView(prev);
 }
-
+void HUD::setEnemyProximity(float alpha) {
+	m_enemyProximityAlpha = alpha;
+}
 void HUD::drawSignalIndicator() {
 	if (!m_showIndicator) return;
 
@@ -360,6 +362,15 @@ void HUD::drawFeedback() {
 		fade.setFillColor(sf::Color(0, 0, 0,
 			static_cast<uint8_t>(alpha * 255.f)));
 		m_window.draw(fade);
+	}
+
+	// Viñeta de proximidad al enemigo - rojo pulsante
+	if (m_enemyProximityAlpha > 0.f) {
+		float pulse = std::abs(std::sin(
+			m_clock.getElapsedTime().asSeconds() * 4.f
+		));
+		float finalAlpha = m_enemyProximityAlpha * (0.4f + 0.3f * pulse);
+		drawVignette(sf::Color(200, 20, 20), finalAlpha);
 	}
 }
 void HUD::drawZoneNotification() {

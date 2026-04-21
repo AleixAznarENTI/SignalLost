@@ -178,3 +178,47 @@ void ParticleSystem::emitBattery(sf::Vector2f origin, float dt) {
 		m_particles.push_back(p);
 	}
 }
+
+void ParticleSystem::emitEnemy(sf::Vector2f origin,
+							   bool isChasing,
+							   float dt) 
+{
+	if (static_cast<int>(m_particles.size()) >= m_maxParticles) return;
+
+	float rate = isChasing ? 80.f : 25.f;
+	int toEmit = static_cast<int>(rate * dt) +
+		(randRange(0.f, 1.f) < rate * dt ? 1 : 0);
+
+	for (int i = 0; i < toEmit; ++i) {
+		if (static_cast<int>(m_particles.size()) >= m_maxParticles) break;
+
+		Particle p;
+		float angle = randRange(0.f, 2.f * M_PI);
+		float radius = randRange(2.f, isChasing ? 20.f : 10.f);
+
+		p.position = {
+			origin.x + radius * std::cos(angle),
+			origin.y + radius * std::sin(angle)
+		};
+
+		if (isChasing) {
+			p.velocity = {
+				std::cos(angle) * randRange(15.f, 40.f),
+				std::sin(angle) * randRange(15.f, 40.f)
+			};
+			p.lifetime = randRange(0.15f, 0.4f);
+			p.color = sf::Color(255, 60, 60);
+		}
+		else {
+			p.velocity = {
+				randRange(-5.f, 5.f),
+				randRange(-15.f, -4.f)
+			};
+			p.lifetime = randRange(0.5f, 1.2f);
+			p.color = sf::Color(140, 30, 30);
+		}
+
+		p.maxLife = p.lifetime;
+		m_particles.push_back(p);
+	}
+}

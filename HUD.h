@@ -16,7 +16,7 @@ public:
 	void setSignalInfo(sf::Vector2f playerPos,
 					   sf::Vector2f signalPos,
 					   bool			inControlRoom);
-
+	void setEnemyProximity(float alpha);
 	// Feedback triggers
 	void triggerBatteryPickup();
 	void triggerDangerEnter();
@@ -32,6 +32,7 @@ private:
 	const sf::Font& m_font;
 	AudioManager& m_audio;
 	TypewriterText m_typewriter;
+	sf::Clock m_clock;
 
 	// Signal state
 	float m_signalAngle = 0.f;
@@ -52,6 +53,8 @@ private:
 	float m_zoneNotifTimer = 0.f;
 	std::string m_zoneNotifText;
 	sf::Color m_zoneNotifColor;
+
+	float m_enemyProximityAlpha = 0.f;
 
 	// --- Draw Helpers ---
 	void drawEnergyBar(float energyPercentage);

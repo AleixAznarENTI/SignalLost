@@ -15,6 +15,7 @@
 #include "GameState.h"
 #include "Minimap.h"
 #include "HazardZoneSystem.h"
+#include "Enemy.h"
 
     class Game {
     public:
@@ -39,6 +40,8 @@
         AudioManager   m_audio;
         ParticleSystem m_particles;
         Minimap        m_minimap;
+        std::vector<Enemy> m_enemies;
+        bool m_enemyAlertPlayed = false;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;
@@ -67,7 +70,10 @@
         void updateRoomEffects(float dt);
         void updateBatteries(float dt);
         void updateHazardEffects(float dt);
+        void updateEnemies(float dt);
+        void updateEnemyProximity();
         void checkEndConditions();
+        void spawnEnemies();
 
         static constexpr int   MAP_W = 60;
         static constexpr int   MAP_H = 60;
