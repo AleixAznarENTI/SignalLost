@@ -92,7 +92,7 @@ void Game::update(float dt) {
     updateMovement(dt);
     updateRoomEffects(dt);
     updateHazardEffects(dt);
-    updateBatteries();
+    updateBatteries(dt);
     checkEndConditions();
 
     // Sistemas que dependen de todo lo anterior
@@ -152,9 +152,11 @@ void Game::updateRoomEffects(float dt) {
     m_hud.setCurrentRoom(currentRoom);
 }
 
-void Game::updateBatteries() {
+void Game::updateBatteries(float dt) {
     for (auto& battery : m_batteries) {
         if (battery.isCollected()) continue;
+        if (!battery.isCollected())
+            m_particles.emitBattery(battery.getPosition(), dt);
 
         sf::Vector2f diff = m_player.getPosition() - battery.getPosition();
         float        distSq = diff.x * diff.x + diff.y * diff.y;

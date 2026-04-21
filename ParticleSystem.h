@@ -25,6 +25,8 @@ public:
 
 	void emitHazard(sf::Vector2f origin, HazardType type, float dt);
 
+	void emitBattery(sf::Vector2f origin, float dt);
+
 private:
 	std::vector<Particle> m_particles;
 	sf::VertexArray m_vertices;

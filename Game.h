@@ -65,7 +65,7 @@
 
         void updateMovement(float dt);
         void updateRoomEffects(float dt);
-        void updateBatteries();
+        void updateBatteries(float dt);
         void updateHazardEffects(float dt);
         void checkEndConditions();
 

@@ -89,15 +89,59 @@ void Renderer::drawSignal(sf::Vector2f position) {
 }
 
 void Renderer::drawBatteries(const std::vector<Battery>& batteries) {
-	float pulse = std::abs(std::sin(m_clock.getElapsedTime().asSeconds() * 2.f));
-	
+	float time = m_clock.getElapsedTime().asSeconds();
+	float pulse = std::abs(std::sin(time * 2.f));
+	float fastP = std::abs(std::sin(time * 6.f));
+
 	for (const auto& battery : batteries) {
 		if (battery.isCollected()) continue;
+
+		sf::Vector2f pos = battery.getPosition();
+
+		// --- Exterior Halo ---
+		float haloRadius = m_tileSize * (1.8f + 0.4f * pulse);
+		sf::CircleShape halo(haloRadius);
+		halo.setOrigin({ haloRadius, haloRadius });
+		halo.setPosition(pos);
+		halo.setFillColor(sf::Color(
+			180, 220, 50,
+			static_cast<uint8_t>(30 + 25 * pulse)
+		));
+		m_window.draw(halo);
+
+		// --- Middle Halo ---
+		float midRadius = m_tileSize * (0.9f + 0.2f * pulse);
+		sf::CircleShape mid(midRadius);
+		mid.setOrigin({ midRadius, midRadius });
+		mid.setPosition(pos);
+		mid.setFillColor(sf::Color(
+			200, 240, 80,
+			static_cast<uint8_t>(60 + 40 * pulse)
+		));
+		m_window.draw(mid);
+
+		// --- Core ---
+		float bodyW = m_tileSize * 0.4f;
+		float bodyH = m_tileSize * 0.55f;
+
+		m_batteryShape.setSize({ bodyW, bodyH });
+		m_batteryShape.setOrigin({ bodyW / 2.f, bodyH / 2.f });
 
 		uint8_t r = static_cast<uint8_t>(200 + 55 * pulse);
 		uint8_t g = static_cast<uint8_t>(180 + 40 * pulse);
 		m_batteryShape.setFillColor(sf::Color(r, g, 30));
-		m_batteryShape.setPosition(battery.getPosition());
+		m_batteryShape.setOutlineColor(sf::Color(255, 255, 120, 200));
+		m_batteryShape.setOutlineThickness(1.5f);
+		m_batteryShape.setPosition(pos);
 		m_window.draw(m_batteryShape);
+
+		// --- Positive pole ---
+		float poleW = bodyW * 0.35f;
+		float poleH = m_tileSize * 0.08f;
+		sf::RectangleShape pole({ poleW, poleH });
+		pole.setOrigin({ poleW / 2.f, poleH });
+		pole.setFillColor(sf::Color(255, 255, 150, 200));
+		pole.setPosition({ pos.x, pos.y - bodyH / 2.f });
+		m_window.draw(pole);
 	}
 }
