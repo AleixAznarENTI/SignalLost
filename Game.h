@@ -14,6 +14,7 @@
 #include "Battery.h"
 #include "GameState.h"
 #include "Minimap.h"
+#include "HazardZoneSystem.h"
 
     class Game {
     public:
@@ -46,6 +47,12 @@
         GameState            m_prevState;
         sf::Clock            m_clock;
 
+        // --- Hazard Zones ---
+        HazardZoneSystem m_hazards;
+        HazardType m_currentHazard = HazardType::None;
+        HazardType m_prevHazard = HazardType::None;
+
+
         // --- The three phases of the game loop ---
         void processInput();
         void update(float dt);
@@ -59,6 +66,7 @@
         void updateMovement(float dt);
         void updateRoomEffects(float dt);
         void updateBatteries();
+        void updateHazardEffects(float dt);
         void checkEndConditions();
 
         static constexpr int   MAP_W = 60;

@@ -23,6 +23,7 @@ public:
 	void triggerControlEnter();
 	void triggerSignalFound();
 	void triggerGameOver();
+	void triggerZoneNotification(const std::string& name, sf::Color color);
 
 	void setCurrentRoom(RoomType room);
 
@@ -47,6 +48,11 @@ private:
 	RoomType m_currentRoom = RoomType::Normal;
 	RoomType m_prevRoom = RoomType::Normal;
 
+	// --- ZoneNotificators ---
+	float m_zoneNotifTimer = 0.f;
+	std::string m_zoneNotifText;
+	sf::Color m_zoneNotifColor;
+
 	// --- Draw Helpers ---
 	void drawEnergyBar(float energyPercentage);
 	void drawIntro();
@@ -54,4 +60,5 @@ private:
 	void drawSignalIndicator();
 	void drawVignette(sf::Color color, float alpha);
 	void drawFeedback();
+	void drawZoneNotification();
 };

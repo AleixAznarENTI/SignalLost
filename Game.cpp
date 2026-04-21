@@ -89,6 +89,7 @@ void Game::update(float dt) {
 
     updateMovement(dt);
     updateRoomEffects(dt);
+    updateHazardEffects(dt);
     updateBatteries();
     checkEndConditions();
 
@@ -166,6 +167,55 @@ void Game::updateBatteries() {
     }
 }
 
+void Game::updateHazardEffects(float dt) {
+    sf::Vector2i playerTile(
+        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
+        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
+    );
+
+    m_currentHazard = m_hazards.getHazardAt(playerTile.x, playerTile.y);
+
+    // Detectar cambio de zona → notificación
+    if (m_currentHazard != m_prevHazard) {
+        if (m_currentHazard != HazardType::None) {
+            // Buscamos la zona para obtener nombre y color
+            for (const auto& zone : m_hazards.getZones()) {
+                if (zone.contains(playerTile.x, playerTile.y)) {
+                    m_hud.triggerZoneNotification(zone.getName(), zone.getColor());
+                    break;
+                }
+            }
+        }
+        m_prevHazard = m_currentHazard;
+    }
+
+    // Aplicar efectos según la zona
+    switch (m_currentHazard) {
+    case HazardType::Radiation:
+        m_energy.applyPenalty(10.f * dt);   // drain extra
+        m_player.setSpeedMultiplier(1.f);
+        break;
+
+    case HazardType::Cold:
+        m_player.setSpeedMultiplier(0.45f); // ralentiza mucho
+        break;
+
+    case HazardType::Electric: {
+        // Parpadeo agresivo de linterna
+        float buzz = 1.f + 0.25f * std::sin(
+            m_clock.getElapsedTime().asSeconds() * 25.f);
+        m_flashlight.setRadius(
+            160.f * m_energy.getPercentage() * buzz);
+        m_player.setSpeedMultiplier(1.f);
+        break;
+    }
+
+    default:
+        m_player.setSpeedMultiplier(1.f);   // velocidad normal
+        break;
+    }
+}
+
 void Game::checkEndConditions() {
     sf::Vector2f diff = m_player.getPosition() - m_signalPos;
     float        distSq = diff.x * diff.x + diff.y * diff.y;
@@ -217,6 +267,7 @@ void Game::render() {
 // ----------------------------------------------------------------
 void Game::initMap() {
     m_map.generate(3000);
+    m_hazards.generate(m_map, 5); // 5 hazard zones
     m_renderer.bakeMap(m_map);
     m_minimap.bake(m_map);
     m_player = Player(sf::Vector2f(m_map.getStartPosition()) * TILE_SIZE, TILE_SIZE);

@@ -63,6 +63,7 @@ void HUD::update(float dt, GameState state) {
 	tick(m_controlVignetteTimer);
 	tick(m_signalFlashTimer);
 	tick(m_gameOverFadeTimer);
+	tick(m_zoneNotifTimer);
 }
 
 void HUD::setSignalInfo(sf::Vector2f playerPos,
@@ -173,6 +174,7 @@ void HUD::draw(float energyPercent, GameState state) {
 		drawEnergyBar(energyPercent);
 		drawSignalIndicator();
 		drawFeedback();
+		drawZoneNotification();
 		break;
 	case GameState::Victory:
 	case GameState::GameOver:
@@ -262,40 +264,6 @@ void HUD::drawSignalIndicator() {
 	label.setPosition({ center.x, center.y - 52.f });
 	m_window.draw(label);
 
-}
-#pragma endregion
-#pragma region TRIGGERS
-
-
-
-void HUD::triggerBatteryPickup() {
-	m_batteryFlashTimer = 0.4f;  // dura 0.4 segundos
-}
-
-void HUD::triggerDangerEnter() {
-	m_dangerVignetteTimer = 1.2f;
-}
-
-void HUD::triggerControlEnter() {
-	m_controlVignetteTimer = 1.2f;
-}
-
-void HUD::triggerSignalFound() {
-	m_signalFlashTimer = 1.5f;
-}
-
-void HUD::triggerGameOver() {
-	m_gameOverFadeTimer = 3.f;  // fade a negro en 3 segundos
-}
-
-void HUD::setCurrentRoom(RoomType room) {
-	// Detectamos transición de sala
-	if (room != m_prevRoom) {
-		if (room == RoomType::Danger)  triggerDangerEnter();
-		if (room == RoomType::Control) triggerControlEnter();
-		m_prevRoom = room;
-	}
-	m_currentRoom = room;
 }
 
 // --- Viñeta (overlay en los bordes de pantalla) ---
@@ -394,4 +362,95 @@ void HUD::drawFeedback() {
 		m_window.draw(fade);
 	}
 }
+void HUD::drawZoneNotification() {
+	if (m_zoneNotifTimer <= 0.f) return;
+
+	// Fade in rápido (0.3s) → visible → fade out lento
+	float progress = 1.f - (m_zoneNotifTimer / 2.5f);
+	float alpha;
+	if (progress < 0.12f)
+		alpha = progress / 0.12f;
+	else if (progress < 0.7f)
+		alpha = 1.f;
+	else
+		alpha = 1.f - (progress - 0.7f) / 0.3f;
+
+	alpha = std::max(0.f, std::min(1.f, alpha));
+
+	sf::Text text(m_font, m_zoneNotifText, 22);
+	text.setStyle(sf::Text::Bold);
+	text.setFillColor(sf::Color(
+		m_zoneNotifColor.r,
+		m_zoneNotifColor.g,
+		m_zoneNotifColor.b,
+		static_cast<uint8_t>(alpha * 255.f)
+	));
+
+	// Centrado en la parte superior
+	sf::FloatRect bounds = text.getLocalBounds();
+	text.setOrigin({
+		bounds.position.x + bounds.size.x / 2.f,
+		bounds.position.y + bounds.size.y / 2.f
+		});
+	text.setPosition({
+		m_window.getSize().x / 2.f,
+		40.f
+		});
+
+	// Línea decorativa debajo del texto
+	float lineW = bounds.size.x + 40.f;
+	sf::RectangleShape line({ lineW, 1.f });
+	line.setOrigin({ lineW / 2.f, 0.f });
+	line.setPosition({ m_window.getSize().x / 2.f, 56.f });
+	line.setFillColor(sf::Color(
+		m_zoneNotifColor.r,
+		m_zoneNotifColor.g,
+		m_zoneNotifColor.b,
+		static_cast<uint8_t>(alpha * 180.f)
+	));
+
+	m_window.draw(text);
+	m_window.draw(line);
+}
+
+#pragma endregion
+#pragma region TRIGGERS
+
+void HUD::triggerZoneNotification(const std::string& name, sf::Color color) {
+	m_zoneNotifText = name;
+	m_zoneNotifColor = color;
+	m_zoneNotifTimer = 2.5f;
+}
+
+void HUD::triggerBatteryPickup() {
+	m_batteryFlashTimer = 0.4f;  // dura 0.4 segundos
+}
+
+void HUD::triggerDangerEnter() {
+	m_dangerVignetteTimer = 1.2f;
+}
+
+void HUD::triggerControlEnter() {
+	m_controlVignetteTimer = 1.2f;
+}
+
+void HUD::triggerSignalFound() {
+	m_signalFlashTimer = 1.5f;
+}
+
+void HUD::triggerGameOver() {
+	m_gameOverFadeTimer = 3.f;  // fade a negro en 3 segundos
+}
+
+void HUD::setCurrentRoom(RoomType room) {
+	// Detectamos transición de sala
+	if (room != m_prevRoom) {
+		if (room == RoomType::Danger)  triggerDangerEnter();
+		if (room == RoomType::Control) triggerControlEnter();
+		m_prevRoom = room;
+	}
+	m_currentRoom = room;
+}
+
+
 #pragma endregion

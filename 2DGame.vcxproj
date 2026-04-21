@@ -136,6 +136,7 @@
     <ClCompile Include="EnergySystem.cpp" />
     <ClCompile Include="Flashlight.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="HazardZoneSystem.cpp" />
     <ClCompile Include="HUD.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Map.cpp" />
@@ -153,6 +154,8 @@
     <ClInclude Include="Flashlight.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameState.h" />
+    <ClInclude Include="HazardZone.h" />
+    <ClInclude Include="HazardZoneSystem.h" />
     <ClInclude Include="HUD.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="Minimap.h" />

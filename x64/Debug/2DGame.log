@@ -1,2 +1,7 @@
-﻿  HUD.cpp
+﻿  Game.cpp
+  HazardZoneSystem.cpp
+  HUD.cpp
+  main.cpp
+  Player.cpp
+  Generando código...
   2DGame.vcxproj -> C:\Users\Usuario\Desktop\C++\2DGame\2DGame\x64\Debug\2DGame.exe

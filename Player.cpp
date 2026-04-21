@@ -20,8 +20,8 @@ void Player::move(sf::Vector2f velocity, float dt, const Map& map) {
 		velocity.y *= 1.f / std::sqrt(2.f);
 	}
 
-	float moveX = velocity.x * m_speed * dt;
-	float moveY = velocity.y * m_speed * dt;
+	float moveX = velocity.x * m_speed * m_speedMultiplier * dt;
+	float moveY = velocity.y * m_speed * m_speedMultiplier * dt;
 	float r		= m_radius - 1.f;
 
 	sf::Vector2f newPosX = m_position + sf::Vector2f(moveX, 0.f);
