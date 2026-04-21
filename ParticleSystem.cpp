@@ -93,8 +93,64 @@ void ParticleSystem::draw(sf::RenderWindow& window) {
 		uint8_t alpha = static_cast<uint8_t>(lifeFraction * 180.f);
 
 		m_vertices[i].position = p.position;
-		m_vertices[i].color = sf::Color(200, 210, 255, alpha);
+		m_vertices[i].color = sf::Color(p.color.r, p.color.g, p.color.b, alpha);
 	}
 
 	window.draw(m_vertices);
+}
+
+void ParticleSystem::emitHazard(sf::Vector2f origin,
+	HazardType   type,
+	float        dt)
+{
+	if (type == HazardType::None) return;
+	if (static_cast<int>(m_particles.size()) >= m_maxParticles) return;
+
+	// Cada zona emite más partículas que el polvo normal
+	int toEmit = static_cast<int>(60.f * dt) +
+		(randRange(0.f, 1.f) < 60.f * dt ? 1 : 0);
+
+	for (int i = 0; i < toEmit; ++i) {
+		if (static_cast<int>(m_particles.size()) >= m_maxParticles) break;
+
+		Particle p;
+
+		float angle = randRange(0.f, 2.f * 3.14159265f);
+		float radius = randRange(5.f, 60.f);
+		p.position = {
+			origin.x + radius * std::cos(angle),
+			origin.y + radius * std::sin(angle)
+		};
+
+		switch (type) {
+		case HazardType::Radiation:
+			// Partículas que suben lentamente — humo radiactivo
+			p.velocity = { randRange(-8.f, 8.f), randRange(-20.f, -5.f) };
+			p.lifetime = randRange(1.f, 2.5f);
+			p.color = sf::Color(80, 220, 80);   // verde
+			break;
+
+		case HazardType::Cold:
+			// Copos que caen y derivan — nieve/escarcha
+			p.velocity = { randRange(-5.f, 5.f), randRange(5.f, 15.f) };
+			p.lifetime = randRange(1.5f, 3.f);
+			p.color = sf::Color(100, 180, 255); // azul claro
+			break;
+
+		case HazardType::Electric:
+			// Chispas rápidas en todas direcciones
+			p.velocity = {
+				randRange(-40.f, 40.f),
+				randRange(-40.f, 40.f)
+			};
+			p.lifetime = randRange(0.1f, 0.4f);    // muy cortas
+			p.color = sf::Color(255, 240, 80);  // amarillo
+			break;
+
+		default: break;
+		}
+
+		p.maxLife = p.lifetime;
+		m_particles.push_back(p);
+	}
 }

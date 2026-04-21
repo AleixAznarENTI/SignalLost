@@ -9,7 +9,9 @@
 // Constructor: initialize all systems, load resources, generate the map and position the player
 // ----------------------------------------------------------------
 Game::Game()
-    : m_window(sf::VideoMode({ 800u, 600u }), "Signal Lost")
+    : m_window(sf::VideoMode({ 1920u, 1080u }),
+        "Signal Lost",
+        sf::State::Fullscreen) // if I dont want fullscreen, just delete this
     , m_map(MAP_W, MAP_H)
     , m_player({ 0.f, 0.f }, TILE_SIZE)   // posición provisional, reset() la fija
     , m_camera(m_window, TILE_SIZE)
@@ -214,6 +216,8 @@ void Game::updateHazardEffects(float dt) {
         m_player.setSpeedMultiplier(1.f);   // velocidad normal
         break;
     }
+
+    m_particles.emitHazard(m_player.getPosition(), m_currentHazard, dt);
 }
 
 void Game::checkEndConditions() {
