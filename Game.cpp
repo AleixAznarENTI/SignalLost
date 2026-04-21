@@ -14,7 +14,7 @@ Game::Game()
     , m_player({ 0.f, 0.f }, TILE_SIZE)   // posición provisional, reset() la fija
     , m_camera(m_window, TILE_SIZE)
     , m_renderer(m_window, TILE_SIZE)
-    , m_flashlight(m_window.getSize(), 160.f)
+    , m_flashlight(m_window.getSize(), 180.f)
     , m_energy(100.f, 5.f)
     , m_hud(m_window, m_font, m_audio)
     , m_particles(200)
@@ -81,12 +81,27 @@ void Game::processInput() {
 // ----------------------------------------------------------------
 // update: game logic
 // ----------------------------------------------------------------
+// Game.cpp
+
 void Game::update(float dt) {
     m_hud.update(dt, m_state);
-
     if (m_state != GameState::Playing) return;
 
-    // --- Movement ---
+    updateMovement(dt);
+    updateRoomEffects(dt);
+    updateBatteries();
+    checkEndConditions();
+
+    // Sistemas que dependen de todo lo anterior
+    m_particles.emit(m_player.getPosition(), dt);
+    m_particles.update(dt);
+    m_camera.follow(m_player.getPosition());
+    m_flashlight.update(m_player.getPosition(),
+        m_camera.getView(),
+        m_window, m_map, TILE_SIZE);
+}
+
+void Game::updateMovement(float dt) {
     sf::Vector2f velocity(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) velocity.y -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) velocity.y += 1.f;
@@ -94,24 +109,28 @@ void Game::update(float dt) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) velocity.x += 1.f;
 
     m_player.move(velocity, dt, m_map);
-
-
-    // --- Systems ---
     m_energy.update(dt);
     m_audio.update(m_energy.getPercentage());
-    m_particles.emit(m_player.getPosition(), dt);
-    m_particles.update(dt);
-    m_camera.follow(m_player.getPosition());
+}
 
+void Game::updateRoomEffects(float dt) {
     sf::Vector2i playerTile(
         static_cast<int>(m_player.getPosition().x / TILE_SIZE),
         static_cast<int>(m_player.getPosition().y / TILE_SIZE)
     );
+
     RoomType currentRoom = m_map.getRoomTypeAt(playerTile.x, playerTile.y);
-    m_minimap.revealAt(playerTile, m_map);
-    // Danger room effects
-    if (currentRoom == RoomType::Danger) 
-		m_energy.applyPenalty(15.f * dt);
+
+    if (currentRoom == RoomType::Danger) {
+        m_energy.applyPenalty(15.f * dt);
+    }
+
+    float flickerRadius = 160.f * (0.5f + 0.5f * m_energy.getPercentage());
+    if (currentRoom == RoomType::Danger) {
+        flickerRadius *= 1.f + 0.15f * std::sin(
+            m_clock.getElapsedTime().asSeconds() * 15.f);
+    }
+    m_flashlight.setRadius(flickerRadius);
 
     m_hud.setSignalInfo(
         m_player.getPosition(),
@@ -119,48 +138,54 @@ void Game::update(float dt) {
         currentRoom == RoomType::Control
     );
 
-    float flickerRadius = 160.f * (0.5f + 0.5f * m_energy.getPercentage());
+    m_minimap.revealAt(
+        playerTile,
+        m_flashlight.getAngle(),
+        m_flashlight.getHalfAperture(),
+        m_flashlight.getRadius(),
+        m_map, TILE_SIZE
+    );
 
-    if (currentRoom == RoomType::Danger) {
-        float dangerFlicker = 1.f + 0.15f * std::sin(
-			m_clock.getElapsedTime().asSeconds() * 15.f
-        );
-        m_flashlight.setRadius(flickerRadius * dangerFlicker);
-    }
-    // Radius of the flashlight reduces with low energy
-    m_flashlight.setRadius(flickerRadius);
-    m_flashlight.update(m_player.getPosition(), m_camera.getView(), m_window);
+    m_hud.setCurrentRoom(currentRoom);
+}
 
-    // --- Batteries ---
+void Game::updateBatteries() {
     for (auto& battery : m_batteries) {
         if (battery.isCollected()) continue;
 
         sf::Vector2f diff = m_player.getPosition() - battery.getPosition();
-		float distSq = diff.x * diff.x + diff.y * diff.y;
-		float thresholdSq = (TILE_SIZE * 0.8f) * (TILE_SIZE * 0.8f);
-        if (distSq < thresholdSq) {
+        float        distSq = diff.x * diff.x + diff.y * diff.y;
+        float        threshold = TILE_SIZE * 0.8f * TILE_SIZE * 0.8f;
+
+        if (distSq < threshold) {
             battery.collect();
             m_energy.restore(battery.getRestoreAmount());
             m_audio.playBatteryPickup();
+            m_hud.triggerBatteryPickup();
         }
     }
+}
 
-    // --- End conditions ---
+void Game::checkEndConditions() {
     sf::Vector2f diff = m_player.getPosition() - m_signalPos;
-	float distSigSq = diff.x * diff.x + diff.y * diff.y;
-	float sigThreshSq = (TILE_SIZE * 1.2f) * (TILE_SIZE * 1.2f);
-    
-    if (distSigSq < sigThreshSq)  m_state = GameState::Victory;
-    if (m_energy.isDepleted())        m_state = GameState::GameOver;
+    float        distSq = diff.x * diff.x + diff.y * diff.y;
+    float        threshold = TILE_SIZE * 1.2f * TILE_SIZE * 1.2f;
 
-    // Reaction to state change (triggers only once)
+    if (distSq < threshold)        m_state = GameState::Victory;
+    if (m_energy.isDepleted())     m_state = GameState::GameOver;
+
     if (m_state != m_prevState) {
-        if (m_state == GameState::Victory)  m_audio.playSignalFound();
-        if (m_state == GameState::GameOver) m_audio.playGameOver();
+        if (m_state == GameState::Victory) { 
+            m_audio.playSignalFound(); 
+            m_hud.triggerSignalFound();
+        }
+        if (m_state == GameState::GameOver) { 
+            m_audio.playGameOver(); 
+            m_hud.triggerGameOver();
+        }
         m_hud.onStateChanged(m_state);
         m_prevState = m_state;
     }
-
 }
 
 // ----------------------------------------------------------------

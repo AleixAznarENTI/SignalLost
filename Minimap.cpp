@@ -45,14 +45,52 @@ void Minimap::bake(const Map& map) {
 
     m_texture.display();
 }
+bool Minimap::hasLineOfSight(sf::Vector2i from,
+                             sf::Vector2i to,
+                             const Map& map) const
+{
+    float dx = static_cast<float>(to.x - from.x);
+    float dy = static_cast<float>(to.y - from.y);
+    float steps = std::max(std::abs(dx), std::abs(dy)) * 2.f;
 
-void Minimap::revealAt(sf::Vector2i playerTile, const Map& map) {
-    const int REVEAL_RADIUS = 6;
+    if (steps == 0.f) return true;
 
+    for (float i = 1.f; i < steps; ++i) {
+        float t = i / steps;
+        int tx = static_cast<int>(from.x + dx * t + 0.5f);
+        int ty = static_cast<int>(from.y + dy * t + 0.5f);
+
+        if (map.getTile(tx, ty) == TileType::Wall) {
+            return false;
+        }
+    }
+
+    return true;
+}
+sf::Color Minimap::tileColor(TileType tile, RoomType rtype) const {
+    if (tile == TileType::Wall)
+        return sf::Color(40, 40, 60);
+
+    switch (rtype) {
+    case RoomType::Storage: return sf::Color(50, 100, 60);
+    case RoomType::Danger:  return sf::Color(100, 40, 40);
+    case RoomType::Control: return sf::Color(40, 60, 110);
+    default:                return sf::Color(90, 90, 120);
+    }
+}
+
+void Minimap::revealAt(sf::Vector2i playerTile,
+    float        flashAngle,
+    float        halfAperture,
+    float        flashRadius,
+    const Map& map,
+    float        worldTileSize)
+{
+    int  radiusTiles = static_cast<int>(flashRadius / worldTileSize) + 1;
     bool anyNew = false;
 
-    for (int dy = -REVEAL_RADIUS; dy <= REVEAL_RADIUS; ++dy) {
-        for (int dx = -REVEAL_RADIUS; dx <= REVEAL_RADIUS; ++dx) {
+    for (int dy = -radiusTiles; dy <= radiusTiles; ++dy) {
+        for (int dx = -radiusTiles; dx <= radiusTiles; ++dx) {
             int tx = playerTile.x + dx;
             int ty = playerTile.y + dy;
 
@@ -60,41 +98,43 @@ void Minimap::revealAt(sf::Vector2i playerTile, const Map& map) {
             if (m_revealed[ty][tx]) continue;
 
             float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-            if (dist > REVEAL_RADIUS) continue;
+            if (dist > radiusTiles) continue;
+
+            // Halo ambiental: siempre revelamos tiles muy cercanos
+            if (dist > 2.f && !isInCone(dx, dy, flashAngle, halfAperture))
+                continue;
+
+            if (!hasLineOfSight(playerTile, { tx, ty }, map)) continue;
 
             m_revealed[ty][tx] = true;
             anyNew = true;
 
-            TileType     tile = map.getTile(tx, ty);
-            RoomType     rtype = map.getRoomTypeAt(tx, ty);
-
-            if (tile == TileType::Wall) {
-                m_tileShape.setFillColor(sf::Color(40, 40, 60));
-            }
-            else {
-                switch (rtype) {
-                case RoomType::Storage:
-                    m_tileShape.setFillColor(sf::Color(50, 100, 60));
-                    break;
-                case RoomType::Danger:
-                    m_tileShape.setFillColor(sf::Color(100, 40, 40));
-                    break;
-                case RoomType::Control:
-                    m_tileShape.setFillColor(sf::Color(40, 60, 110));
-                    break;
-                default:
-                    m_tileShape.setFillColor(sf::Color(90, 90, 120));
-                    break;
-                }
-            }
-
+            m_tileShape.setFillColor(
+                tileColor(map.getTile(tx, ty),
+                    map.getRoomTypeAt(tx, ty))
+            );
             m_tileShape.setPosition(toMiniPos(tx, ty));
             m_texture.draw(m_tileShape);
         }
     }
 
-    if (anyNew)
-        m_texture.display();
+    if (anyNew) m_texture.display();
+}
+
+bool Minimap::isInCone(int   dx, int   dy,
+    float flashAngle,
+    float halfAperture) const
+{
+    float tileAngle = std::atan2(
+        static_cast<float>(dy),
+        static_cast<float>(dx)
+    );
+
+    float diff = tileAngle - flashAngle;
+    while (diff > 3.14159265f) diff -= 2.f * 3.14159265f;
+    while (diff < -3.14159265f) diff += 2.f * 3.14159265f;
+
+    return std::abs(diff) < halfAperture;
 }
 
 void Minimap::draw(sf::Vector2f playerWorldPos, float worldTileSize) {

@@ -53,15 +53,40 @@ void HUD::onStateChanged(GameState newState) {
 void HUD::update(float dt, GameState state) {
 	if (state != GameState::Playing)
 		m_typewriter.update(dt);
+
+	auto tick = [&](float& timer) {
+		if (timer > 0.f) timer = std::max(0.f, timer - dt);
+	};
+
+	tick(m_batteryFlashTimer);
+	tick(m_dangerVignetteTimer);
+	tick(m_controlVignetteTimer);
+	tick(m_signalFlashTimer);
+	tick(m_gameOverFadeTimer);
 }
 
+void HUD::setSignalInfo(sf::Vector2f playerPos,
+	sf::Vector2f signalPos,
+	bool		 inControlRoom)
+{
+	m_showIndicator = inControlRoom;
+	if (!inControlRoom) return;
+
+	sf::Vector2f diff = signalPos - playerPos;
+	m_signalAngle = std::atan2(diff.y, diff.x);
+	m_signalDistance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+}
+#pragma region DRAW
+
+
+
 void HUD::drawEnergyBar(float energyPercentage) {
-	const float barwidth  = 200.f;
+	const float barWidth  = 200.f;
 	const float barHeight = 14.f;
 	const float margin    = 16.f;
 	float screenH		  = static_cast<float>(m_window.getSize().y);
 
-	sf::RectangleShape bg({ barwidth, barHeight });
+	sf::RectangleShape bg({ barWidth, barHeight });
 	bg.setFillColor(sf::Color(40, 40, 40));
 	bg.setPosition({ margin, screenH - margin - barHeight });
 	m_window.draw(bg);
@@ -71,18 +96,30 @@ void HUD::drawEnergyBar(float energyPercentage) {
 	else if (energyPercentage > .25f) fillColor = sf::Color(240, 200, 50);
 	else fillColor = sf::Color(220, 60, 60);
 
-	sf::RectangleShape fill({ barwidth * energyPercentage, barHeight });
+	sf::RectangleShape fill({ barWidth * energyPercentage, barHeight });
 	fill.setFillColor(fillColor);
 	fill.setPosition(bg.getPosition());
 	m_window.draw(fill);
 
 	// Border
-	sf::RectangleShape border({ barwidth, barHeight });
+	sf::RectangleShape border({ barWidth, barHeight });
 	border.setFillColor(sf::Color::Transparent);
 	border.setOutlineColor(sf::Color(150, 150, 150));
 	border.setOutlineThickness(1.f);
 	border.setPosition(bg.getPosition());
 	m_window.draw(border);
+
+	// Flash verde encima de la barra al recoger batería
+	if (m_batteryFlashTimer > 0.f) {
+		float alpha = m_batteryFlashTimer / 0.4f;  // 1→0
+		sf::RectangleShape flash({ barWidth, barHeight });
+		flash.setPosition(bg.getPosition());
+		flash.setFillColor(sf::Color(
+			100, 255, 100,
+			static_cast<uint8_t>(alpha * 200.f)
+		));
+		m_window.draw(flash);
+	}
 
 	// Etiqueta
 	sf::Text label(m_font, "ENERGY", 11);
@@ -135,27 +172,17 @@ void HUD::draw(float energyPercent, GameState state) {
 	case GameState::Playing:
 		drawEnergyBar(energyPercent);
 		drawSignalIndicator();
+		drawFeedback();
 		break;
 	case GameState::Victory:
 	case GameState::GameOver:
 		drawEnergyBar(energyPercent);
+		drawFeedback();
 		drawEndScreen(state);
 		break;
 	}
 	
 	m_window.setView(prev);
-}
-
-void HUD::setSignalInfo(sf::Vector2f playerPos,
-						sf::Vector2f signalPos,
-						bool		 inControlRoom) 
-{
-	m_showIndicator = inControlRoom;
-	if (!inControlRoom) return;
-
-	sf::Vector2f diff = signalPos - playerPos;
-	m_signalAngle	  = std::atan2(diff.y, diff.x);
-	m_signalDistance  = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 }
 
 void HUD::drawSignalIndicator() {
@@ -236,3 +263,135 @@ void HUD::drawSignalIndicator() {
 	m_window.draw(label);
 
 }
+#pragma endregion
+#pragma region TRIGGERS
+
+
+
+void HUD::triggerBatteryPickup() {
+	m_batteryFlashTimer = 0.4f;  // dura 0.4 segundos
+}
+
+void HUD::triggerDangerEnter() {
+	m_dangerVignetteTimer = 1.2f;
+}
+
+void HUD::triggerControlEnter() {
+	m_controlVignetteTimer = 1.2f;
+}
+
+void HUD::triggerSignalFound() {
+	m_signalFlashTimer = 1.5f;
+}
+
+void HUD::triggerGameOver() {
+	m_gameOverFadeTimer = 3.f;  // fade a negro en 3 segundos
+}
+
+void HUD::setCurrentRoom(RoomType room) {
+	// Detectamos transición de sala
+	if (room != m_prevRoom) {
+		if (room == RoomType::Danger)  triggerDangerEnter();
+		if (room == RoomType::Control) triggerControlEnter();
+		m_prevRoom = room;
+	}
+	m_currentRoom = room;
+}
+
+// --- Viñeta (overlay en los bordes de pantalla) ---
+
+void HUD::drawVignette(sf::Color color, float alpha) {
+	if (alpha <= 0.f) return;
+
+	float w = static_cast<float>(m_window.getSize().x);
+	float h = static_cast<float>(m_window.getSize().y);
+	float thickness = 120.f;
+
+	auto a0 = static_cast<uint8_t>(alpha * 255.f); // opaco en el borde
+	sf::Color solid(color.r, color.g, color.b, a0);
+	sf::Color clear(color.r, color.g, color.b, 0);  // transparente al centro
+
+	// Cada borde es un quad con gradiente: opaco afuera, transparente adentro
+	// Top
+	sf::VertexArray top(sf::PrimitiveType::TriangleStrip, 4);
+	top[0] = { { 0.f, 0.f           }, solid };
+	top[1] = { { w,   0.f           }, solid };
+	top[2] = { { 0.f, thickness     }, clear };
+	top[3] = { { w,   thickness     }, clear };
+	m_window.draw(top);
+
+	// Bottom
+	sf::VertexArray bot(sf::PrimitiveType::TriangleStrip, 4);
+	bot[0] = { { 0.f, h             }, solid };
+	bot[1] = { { w,   h             }, solid };
+	bot[2] = { { 0.f, h - thickness }, clear };
+	bot[3] = { { w,   h - thickness }, clear };
+	m_window.draw(bot);
+
+	// Left
+	sf::VertexArray left(sf::PrimitiveType::TriangleStrip, 4);
+	left[0] = { { 0.f,       0.f }, solid };
+	left[1] = { { thickness, 0.f }, clear };
+	left[2] = { { 0.f,       h   }, solid };
+	left[3] = { { thickness, h   }, clear };
+	m_window.draw(left);
+
+	// Right
+	sf::VertexArray right(sf::PrimitiveType::TriangleStrip, 4);
+	right[0] = { { w,             0.f }, solid };
+	right[1] = { { w - thickness, 0.f }, clear };
+	right[2] = { { w,             h   }, solid };
+	right[3] = { { w - thickness, h   }, clear };
+	m_window.draw(right);
+}
+
+// --- Feedback general ---
+
+void HUD::drawFeedback() {
+	float w = static_cast<float>(m_window.getSize().x);
+	float h = static_cast<float>(m_window.getSize().y);
+
+	// 1. Flash verde al recoger batería — pulso en la barra
+	//    (se gestiona en drawEnergyBar con m_batteryFlashTimer)
+
+	// 2. Viñeta roja sala Danger
+	if (m_dangerVignetteTimer > 0.f) {
+		float alpha = (m_dangerVignetteTimer / 1.2f) * 0.6f;
+		drawVignette(sf::Color(180, 20, 20), alpha);
+	}
+
+	// 3. Viñeta azul sala Control
+	if (m_controlVignetteTimer > 0.f) {
+		float alpha = (m_controlVignetteTimer / 1.2f) * 0.5f;
+		drawVignette(sf::Color(20, 60, 180), alpha);
+	}
+
+	// 4. Flash blanco al encontrar la señal
+	if (m_signalFlashTimer > 0.f) {
+		float progress = 1.f - (m_signalFlashTimer / 1.5f); // 0→1
+		float alpha;
+		if (progress < 0.2f)
+			alpha = progress / 0.2f;         // fade in rápido
+		else
+			alpha = 1.f - (progress - 0.2f) / 0.8f; // fade out lento
+
+		sf::RectangleShape flash(sf::Vector2f(w, h));
+		flash.setFillColor(sf::Color(
+			255, 255, 255,
+			static_cast<uint8_t>(alpha * 200.f)
+		));
+		m_window.draw(flash);
+	}
+
+	// 5. Fade a negro al quedarse sin energía
+	if (m_gameOverFadeTimer > 0.f) {
+		float progress = 1.f - (m_gameOverFadeTimer / 3.f); // 0→1
+		float alpha = progress * progress; // cuadrático = más dramático
+
+		sf::RectangleShape fade(sf::Vector2f(w, h));
+		fade.setFillColor(sf::Color(0, 0, 0,
+			static_cast<uint8_t>(alpha * 255.f)));
+		m_window.draw(fade);
+	}
+}
+#pragma endregion

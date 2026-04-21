@@ -9,7 +9,12 @@ public:
 
     void bake(const Map& map);
 
-    void revealAt(sf::Vector2i playerTile, const Map& map);
+    void revealAt(sf::Vector2i playerTile, 
+                  float        flashAngle,
+                  float        halfAperture,
+                  float        flashRadius,
+                  const Map&   map,
+                  float        worldTileSize);
 
     void draw(sf::Vector2f playerWorldPos, float worldTileSize);
 
@@ -26,5 +31,13 @@ private:
     int m_mapW = 0;
     int m_mapH = 0;
 
+    bool isInCone(int dx, int dy,
+                  float flashAngle,
+                  float halfAperture) const;
+
+    sf::Color tileColor(TileType tile, RoomType rtype) const;
     sf::Vector2f toMiniPos(int tx, int ty) const;
+    bool hasLineOfSight(sf::Vector2i from,
+                        sf::Vector2i to,
+                        const Map&   map) const;
 };

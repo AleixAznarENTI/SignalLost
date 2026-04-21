@@ -56,6 +56,11 @@
         void reset();
         void drawEndScreen();  // "Press R" text in victory/gameover
 
+        void updateMovement(float dt);
+        void updateRoomEffects(float dt);
+        void updateBatteries();
+        void checkEndConditions();
+
         static constexpr int   MAP_W = 60;
         static constexpr int   MAP_H = 60;
         static constexpr float TILE_SIZE = 24.f;
