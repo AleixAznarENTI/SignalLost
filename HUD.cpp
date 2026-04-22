@@ -171,6 +171,7 @@ void HUD::draw(float energyPercent, GameState state) {
 		drawIntro();
 		break;
 	case GameState::Playing:
+	case GameState::Dying:
 		drawEnergyBar(energyPercent);
 		drawSignalIndicator();
 		drawFeedback();

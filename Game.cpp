@@ -87,6 +87,19 @@ void Game::processInput() {
 
 void Game::update(float dt) {
     m_hud.update(dt, m_state);
+
+    if (m_state == GameState::Dying) {
+        m_camera.follow(m_player.getPosition());
+        m_camera.updateShake(dt);
+
+        if (!m_camera.isShaking()) {
+            m_state = GameState::GameOver;
+            m_prevState = GameState::GameOver;
+            m_hud.onStateChanged(GameState::GameOver);
+        }
+        return;
+    }
+
     if (m_state != GameState::Playing) return;
 
     updateMovement(dt);
@@ -100,8 +113,8 @@ void Game::update(float dt) {
     // Sistemas que dependen de todo lo anterior
     m_particles.emit(m_player.getPosition(), dt);
     m_particles.update(dt);
-    m_camera.updateShake(dt);
     m_camera.follow(m_player.getPosition());
+    m_camera.updateShake(dt);
     m_flashlight.update(m_player.getPosition(),
         m_camera.getView(),
         m_window, m_map, TILE_SIZE);
@@ -119,10 +132,10 @@ void Game::updateMovement(float dt) {
     m_audio.update(m_energy.getPercentage());
     for (const auto& enemy : m_enemies) {
         if (enemy.catchesPlayer(m_player.getPosition(), TILE_SIZE)) {
+            m_state = GameState::Dying;
             m_camera.triggerShake(0.5f, 10.f);
-            m_state = GameState::GameOver;
-            m_hud.triggerGameOver();
             m_audio.playGameOver();
+            m_hud.triggerGameOver();
             return;
         }
     }
@@ -326,15 +339,18 @@ void Game::render() {
         m_renderer.drawSignal(m_signalPos);
         m_renderer.drawEnemies(m_enemies);
         m_renderer.drawPlayer(m_player.getPosition());
-
         m_flashlight.draw(m_window);
         m_particles.draw(m_window);
+
     }
-    m_hud.draw(m_energy.getPercentage(), m_state);
+    else {
+        m_window.setView(m_window.getDefaultView());
+    }
 
     if (m_state == GameState::Playing)
         m_minimap.draw(m_player.getPosition(), TILE_SIZE);
 
+    m_hud.draw(m_energy.getPercentage(), m_state);
     m_window.display();
 }
 // ----------------------------------------------------------------

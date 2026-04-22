@@ -1,6 +1,7 @@
 #include "Flashlight.h"
 #include <cmath>
 #include <stdexcept>
+#define M_PI  3.14159265358979323846
 
 Flashlight::Flashlight(sf::Vector2u windowSize, float radius)
     : m_radius(radius)
@@ -16,8 +17,8 @@ void Flashlight::buildAmbientGlow(sf::Vector2f origin) {
     sf::VertexArray glow(sf::PrimitiveType::Triangles, SEGMENTS * 3);
 
     for (int i = 0; i < SEGMENTS; ++i) {
-        float a0 = i * (2.f * 3.14159265f / SEGMENTS);
-        float a1 = (i + 1) * (2.f * 3.14159265f / SEGMENTS);
+        float a0 = i * (2.f * M_PI / SEGMENTS);
+        float a1 = (i + 1) * (2.f * M_PI / SEGMENTS);
 
         glow[i * 3 + 0].position = origin;
         glow[i * 3 + 0].color = sf::Color(80, 80, 120);
@@ -84,7 +85,7 @@ void Flashlight::update(sf::Vector2f      playerPos,
 
     sf::Vector2f diff = mouseWorld - playerPos;
     m_angle = std::atan2(diff.y, diff.x);
-    m_halfAperture = 50.f * (3.14159265f / 180.f);
+    m_halfAperture = 50.f * (M_PI / 180.f);
 
     m_maskTexture.setView(cameraView);
     m_maskTexture.clear(sf::Color::Black);

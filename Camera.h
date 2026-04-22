@@ -17,6 +17,8 @@ public:
 private:
 	sf::View m_view;
 	float	 m_tileSize;
+	sf::Vector2f m_baseCenter;
+
 	float m_shakeTimer = 0.f;
 	float m_shakeDuration = 0.f;
 	float m_shakeIntensity = 0.f;

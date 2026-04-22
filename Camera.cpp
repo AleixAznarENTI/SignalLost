@@ -10,6 +10,7 @@ void Camera:: follow(sf::Vector2f target) {
 
 	//TODO : clamp target to map bounds
 	//TODO : add some easing
+	m_baseCenter = target;
 	m_view.setCenter(target);
 }
 
@@ -30,5 +31,7 @@ void Camera::updateShake(float dt) {
 	float offsetX = ((rand() % 200) - 100) / 100.f * currentI;
 	float offsetY = ((rand() % 200) - 100) / 100.f * currentI;
 
-	m_view.move({ offsetX, offsetY });
+	m_view.setCenter({ m_baseCenter.x + offsetX, 
+					   m_baseCenter.y + offsetY 
+		});
 }
