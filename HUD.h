@@ -17,6 +17,8 @@ public:
 					   sf::Vector2f signalPos,
 					   bool			inControlRoom);
 	void setEnemyProximity(float alpha);
+	void setStats(float time, int batteries,
+				  float distance, int rooms);
 	// Feedback triggers
 	void triggerBatteryPickup();
 	void triggerDangerEnter();
@@ -56,6 +58,12 @@ private:
 
 	float m_enemyProximityAlpha = 0.f;
 
+	// --- Saved Data ---
+	float       m_statTime = 0.f;
+	int         m_statBatteries = 0;
+	float       m_statDistance = 0.f;
+	int         m_statRooms = 0;
+
 	// --- Draw Helpers ---
 	void drawEnergyBar(float energyPercentage);
 	void drawIntro();
@@ -64,4 +72,5 @@ private:
 	void drawVignette(sf::Color color, float alpha);
 	void drawFeedback();
 	void drawZoneNotification();
+	void drawScoreScreen(GameState state);
 };

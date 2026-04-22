@@ -23,6 +23,7 @@ Game::Game()
     , m_state(GameState::Intro)
     , m_prevState(GameState::Intro)
     , m_minimap(m_window, 3.f, 16.f)
+    , m_postProcess(m_window)
 {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
@@ -109,6 +110,25 @@ void Game::update(float dt) {
     updateBatteries(dt);
     updateEnemyProximity();
     checkEndConditions();
+
+    m_stats.update(dt, m_player.getPosition(), TILE_SIZE);
+
+    sf::Vector2i playerTile(
+        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
+        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
+    );
+    const auto& rooms = m_map.getRooms();
+    for (size_t i = 0; i < rooms.size(); ++i) {
+        if (rooms[i].contains(playerTile.x, playerTile.y))
+            m_stats.registerRoomVisit(static_cast<int>(i));
+    }
+
+    m_hud.setStats(
+        m_stats.getTime(),
+        m_stats.getBatteriesCollected(),
+        m_stats.getDistanceTraveled(),
+        m_stats.getRoomsVisited()
+    );
 
     // Sistemas que dependen de todo lo anterior
     m_particles.emit(m_player.getPosition(), dt);
@@ -248,6 +268,7 @@ void Game::updateBatteries(float dt) {
             m_energy.restore(battery.getRestoreAmount());
             m_audio.playBatteryPickup();
             m_hud.triggerBatteryPickup();
+            m_stats.registerBatteryPickup();
         }
     }
 }
@@ -301,6 +322,45 @@ void Game::updateHazardEffects(float dt) {
     }
 
     m_particles.emitHazard(m_player.getPosition(), m_currentHazard, dt);
+
+    sf::Color targetColor;
+    switch (m_currentHazard) {
+    case HazardType::Radiation:
+        targetColor = sf::Color(120, 255, 100); // verde radiactivo
+        break;
+    case HazardType::Cold:
+        targetColor = sf::Color(100, 180, 255); // azul frío
+        break;
+    case HazardType::Electric:
+        targetColor = sf::Color(255, 255, 100); // amarillo eléctrico
+        break;
+    default:
+        // Color según sala
+        switch (m_map.getRoomTypeAt(
+            static_cast<int>(m_player.getPosition().x / TILE_SIZE),
+            static_cast<int>(m_player.getPosition().y / TILE_SIZE)))
+        {
+        case RoomType::Danger:
+            targetColor = sf::Color(255, 160, 100); break; // naranja
+        case RoomType::Control:
+            targetColor = sf::Color(140, 180, 255); break; // azul suave
+        case RoomType::Storage:
+            targetColor = sf::Color(180, 255, 180); break; // verde suave
+        default:
+            targetColor = sf::Color(255, 240, 200); break; // cálido normal
+        }
+    }
+
+    // Lerp suave entre color actual y objetivo (t=0.05 por frame a 60fps)
+    sf::Color current = m_currentLightColor;
+    m_currentLightColor = sf::Color(
+        static_cast<uint8_t>(current.r + (targetColor.r - current.r) * 0.05f),
+        static_cast<uint8_t>(current.g + (targetColor.g - current.g) * 0.05f),
+        static_cast<uint8_t>(current.b + (targetColor.b - current.b) * 0.05f)
+    );
+
+    m_flashlight.setLightColor(m_currentLightColor);
+    m_audio.updateZoneAudio(m_currentHazard);
 }
 
 void Game::checkEndConditions() {
@@ -351,6 +411,8 @@ void Game::render() {
         m_minimap.draw(m_player.getPosition(), TILE_SIZE);
 
     m_hud.draw(m_energy.getPercentage(), m_state);
+
+    m_postProcess.draw(0.4f); // Post Process ALWAYS LAST
     m_window.display();
 }
 // ----------------------------------------------------------------
@@ -366,6 +428,7 @@ void Game::initMap() {
     m_batteries = m_map.getBatteries();
     m_signalPos = sf::Vector2f(m_map.getSignalPosition()) * TILE_SIZE;
     spawnEnemies();
+    m_stats.reset();
 }
 
 void Game::spawnEnemies() {

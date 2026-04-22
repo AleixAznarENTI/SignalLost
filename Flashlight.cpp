@@ -14,6 +14,12 @@ void Flashlight::buildAmbientGlow(sf::Vector2f origin) {
     const int   SEGMENTS = 32;
     const float ambientR = m_radius * 0.25f;
 
+    sf::Color ambientColor(
+        m_lightColor.r / 3,
+        m_lightColor.g / 3,
+        m_lightColor.b / 3
+    );
+
     sf::VertexArray glow(sf::PrimitiveType::Triangles, SEGMENTS * 3);
 
     for (int i = 0; i < SEGMENTS; ++i) {
@@ -21,7 +27,7 @@ void Flashlight::buildAmbientGlow(sf::Vector2f origin) {
         float a1 = (i + 1) * (2.f * M_PI / SEGMENTS);
 
         glow[i * 3 + 0].position = origin;
-        glow[i * 3 + 0].color = sf::Color(80, 80, 120);
+        glow[i * 3 + 0].color = ambientColor;
 
         glow[i * 3 + 1].position = { origin.x + ambientR * std::cos(a0),
                                   origin.y + ambientR * std::sin(a0) };
@@ -48,7 +54,8 @@ void Flashlight::buildLightCone(sf::Vector2f origin,
     float        dirAngle,
     float        halfAperture)
 {
-    float flicker = 1.f + 0.03f * std::sin(m_clock.getElapsedTime().asSeconds() * 7.f);
+    float flicker = 1.f + 0.03f * std::sin(
+        m_clock.getElapsedTime().asSeconds() * 7.f);
     float r = m_radius * flicker;
 
     const int RAY_COUNT = 64;
@@ -61,7 +68,7 @@ void Flashlight::buildLightCone(sf::Vector2f origin,
         float a0 = dirAngle - halfAperture + t0 * 2.f * halfAperture;
         float a1 = dirAngle - halfAperture + t1 * 2.f * halfAperture;
 
-        cone[i * 3 + 0] = { origin,                 sf::Color(255, 240, 200) };
+        cone[i * 3 + 0] = { origin,                 m_lightColor };
         cone[i * 3 + 1] = { castRay(origin, a0, r), sf::Color::Black };
         cone[i * 3 + 2] = { castRay(origin, a1, r), sf::Color::Black };
     }

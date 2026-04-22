@@ -144,7 +144,9 @@
     <ClCompile Include="Minimap.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PostProcess.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="StatsTracker.cpp" />
     <ClCompile Include="TypewriterText.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -163,8 +165,10 @@
     <ClInclude Include="Minimap.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="PostProcess.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
+    <ClInclude Include="StatsTracker.h" />
     <ClInclude Include="TypewriterText.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

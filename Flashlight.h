@@ -20,12 +20,15 @@ public:
     float getHalfAperture() const { return m_halfAperture; }
     float getRadius()       const { return m_radius; }
 
+    void setLightColor(sf::Color color) { m_lightColor = color; }
+
 private:
     sf::RenderTexture m_maskTexture;
     float             m_radius;
     float             m_angle = 0.f;
     float             m_halfAperture = 0.f;
     sf::Clock         m_clock;
+    sf::Color m_lightColor = sf::Color(255, 240, 200);
 
     sf::Vector2f castRay(sf::Vector2f origin,
         float        angle,

@@ -16,6 +16,8 @@
 #include "Minimap.h"
 #include "HazardZoneSystem.h"
 #include "Enemy.h"
+#include "StatsTracker.h"
+#include "PostProcess.h"
 
     class Game {
     public:
@@ -42,6 +44,9 @@
         Minimap        m_minimap;
         std::vector<Enemy> m_enemies;
         bool m_enemyAlertPlayed = false;
+        StatsTracker m_stats;
+        sf::Color m_currentLightColor = sf::Color(255, 240, 200);
+        PostProcess m_postProcess;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;

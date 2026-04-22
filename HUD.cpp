@@ -1,6 +1,8 @@
 #include "HUD.h"
 #include <cstdint>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 HUD::HUD(sf::RenderWindow& window, const sf::Font& font, AudioManager& audio)
 	: m_window(window)
@@ -77,9 +79,94 @@ void HUD::setSignalInfo(sf::Vector2f playerPos,
 	m_signalAngle = std::atan2(diff.y, diff.x);
 	m_signalDistance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 }
-#pragma region DRAW
 
 
+void HUD::drawScoreScreen(GameState state) {
+	float w = static_cast<float>(m_window.getSize().x);
+	float h = static_cast<float>(m_window.getSize().y);
+
+	// Título según estado
+	std::string title = (state == GameState::Victory)
+		? "MISION COMPLETADA" : "MISION FALLIDA";
+	sf::Color titleColor = (state == GameState::Victory)
+		? sf::Color(80, 255, 120) : sf::Color(220, 60, 60);
+
+	// --- Título ---
+	sf::Text titleText(m_font, title, 32);
+	titleText.setFillColor(titleColor);
+	titleText.setStyle(sf::Text::Bold);
+	sf::FloatRect tb = titleText.getLocalBounds();
+	titleText.setOrigin({
+		tb.position.x + tb.size.x / 2.f,
+		tb.position.y + tb.size.y / 2.f
+		});
+	titleText.setPosition({ w / 2.f, h / 2.f - 120.f });
+	m_window.draw(titleText);
+
+	// Línea separadora
+	sf::RectangleShape line({ 300.f, 1.f });
+	line.setOrigin({ 150.f, 0.f });
+	line.setPosition({ w / 2.f, h / 2.f - 90.f });
+	line.setFillColor(sf::Color(titleColor.r, titleColor.g,
+		titleColor.b, 120));
+	m_window.draw(line);
+
+	// --- Métricas ---
+	// Formato: tiempo, baterías, distancia, salas
+	int    minutes = static_cast<int>(m_statTime) / 60;
+	int    seconds = static_cast<int>(m_statTime) % 60;
+	std::ostringstream timeStr;
+	timeStr << minutes << ":" << std::setw(2)
+		<< std::setfill('0') << seconds;
+
+	struct Metric {
+		std::string label;
+		std::string value;
+	};
+
+	std::vector<Metric> metrics = {
+		{ "TIEMPO",            timeStr.str()                              },
+		{ "BATERIAS",          std::to_string(m_statBatteries)            },
+		{ "DISTANCIA",         std::to_string(static_cast<int>(
+								   m_statDistance)) + " tiles"            },
+		{ "SALAS VISITADAS",   std::to_string(m_statRooms)                },
+	};
+
+	float startY = h / 2.f - 60.f;
+	float stepY = 40.f;
+
+	for (size_t i = 0; i < metrics.size(); ++i) {
+		float y = startY + i * stepY;
+
+		// Label (izquierda)
+		sf::Text label(m_font, metrics[i].label, 14);
+		label.setFillColor(sf::Color(150, 150, 170));
+		sf::FloatRect lb = label.getLocalBounds();
+		label.setOrigin({ lb.position.x + lb.size.x, lb.position.y });
+		label.setPosition({ w / 2.f - 20.f, y });
+		m_window.draw(label);
+
+		// Valor (derecha)
+		sf::Text value(m_font, metrics[i].value, 14);
+		value.setFillColor(sf::Color(220, 220, 240));
+		value.setStyle(sf::Text::Bold);
+		sf::FloatRect vb = value.getLocalBounds();
+		value.setOrigin({ vb.position.x, vb.position.y });
+		value.setPosition({ w / 2.f + 20.f, y });
+		m_window.draw(value);
+	}
+
+	// Hint de reinicio
+	sf::Text hint(m_font, "[ R para reiniciar  |  Escape para salir ]", 13);
+	hint.setFillColor(sf::Color(120, 120, 140));
+	sf::FloatRect hb = hint.getLocalBounds();
+	hint.setOrigin({
+		hb.position.x + hb.size.x / 2.f,
+		hb.position.y + hb.size.y / 2.f
+		});
+	hint.setPosition({ w / 2.f, h / 2.f + 110.f });
+	m_window.draw(hint);
+}
 
 void HUD::drawEnergyBar(float energyPercentage) {
 	const float barWidth  = 200.f;
@@ -146,19 +233,10 @@ void HUD::drawIntro() {
 
 void HUD::drawEndScreen(GameState state) {
 	sf::RectangleShape overlay(sf::Vector2f(m_window.getSize()));
-	overlay.setFillColor(sf::Color(0, 0, 0, 170));
+	overlay.setFillColor(sf::Color(0, 0, 0, 180));
 	m_window.draw(overlay);
 
-	sf::Vector2f center(
-		m_window.getSize().x / 2.f,
-		m_window.getSize().y /2.f
-	);
-
-	sf::Color textColor = (state == GameState::Victory)
-		? sf::Color(80, 255, 120) // Green
-		: sf::Color(220, 60, 60); // Red
-
-	m_typewriter.draw(m_window, center, textColor);
+	drawScoreScreen(state); 
 }
 
 void HUD::draw(float energyPercent, GameState state) {
@@ -425,8 +503,6 @@ void HUD::drawZoneNotification() {
 	m_window.draw(line);
 }
 
-#pragma endregion
-#pragma region TRIGGERS
 
 void HUD::triggerZoneNotification(const std::string& name, sf::Color color) {
 	m_zoneNotifText = name;
@@ -464,5 +540,11 @@ void HUD::setCurrentRoom(RoomType room) {
 	m_currentRoom = room;
 }
 
-
-#pragma endregion
+void HUD::setStats(float time, int batteries,
+	float distance, int rooms)
+{
+	m_statTime = time;
+	m_statBatteries = batteries;
+	m_statDistance = distance;
+	m_statRooms = rooms;
+}
