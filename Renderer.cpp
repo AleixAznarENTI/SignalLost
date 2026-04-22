@@ -1,13 +1,14 @@
 #include "Renderer.h"
 #include <cstdint>
 
-Renderer::Renderer(sf::RenderWindow& window, float tileSize)
+Renderer::Renderer(sf::RenderWindow& window, float tileSize, sf::Font font)
 	: m_window(window)
 	, m_tileSize(tileSize)
 	, m_mapSprite(m_mapTexture.getTexture())
 	, m_playerShape(tileSize * .35f)
 	, m_signalShape(tileSize * .3f)
 	, m_batteryShape({ tileSize * 0.4f, tileSize * 0.55f })
+	, m_font(font)
 {
 	m_tileShape.setSize(sf::Vector2f(m_tileSize - 1.f, m_tileSize - 1.f));
 
@@ -143,6 +144,55 @@ void Renderer::drawBatteries(const std::vector<Battery>& batteries) {
 		pole.setFillColor(sf::Color(255, 255, 150, 200));
 		pole.setPosition({ pos.x, pos.y - bodyH / 2.f });
 		m_window.draw(pole);
+	}
+}
+
+void Renderer::drawPowerUps(const std::vector<PowerUp>& powerUps) {
+	float time = m_clock.getElapsedTime().asSeconds();
+	float pulse = std::abs(std::sin(time * 2.5f));
+
+	for (const auto& p : powerUps) {
+		if (p.isCollected()) continue;
+
+		PowerUpDef   def = p.getDef();
+		sf::Vector2f pos = p.getPosition();
+
+		// Halo exterior pulsante
+		float haloR = m_tileSize * (1.4f + 0.3f * pulse);
+		sf::CircleShape halo(haloR);
+		halo.setOrigin({ haloR, haloR });
+		halo.setPosition(pos);
+		halo.setFillColor(sf::Color(
+			def.color.r, def.color.g, def.color.b,
+			static_cast<uint8_t>(25 + 20 * pulse)
+		));
+		m_window.draw(halo);
+
+		// Cuerpo — rombo (cuadrado rotado 45°)
+		float bodyR = m_tileSize * 0.35f;
+		sf::RectangleShape body({ bodyR * 1.4f, bodyR * 1.4f });
+		body.setOrigin({ bodyR * 0.7f, bodyR * 0.7f });
+		body.setRotation(sf::degrees(45.f));
+		body.setPosition(pos);
+		body.setFillColor(sf::Color(
+			def.color.r / 2,
+			def.color.g / 2,
+			def.color.b / 2
+		));
+		body.setOutlineColor(def.color);
+		body.setOutlineThickness(1.5f);
+		m_window.draw(body);
+
+		// Letra identificativa centrada
+		sf::Text icon(m_font, def.icon, 11);
+		icon.setFillColor(def.color);
+		sf::FloatRect ib = icon.getLocalBounds();
+		icon.setOrigin({
+			ib.position.x + ib.size.x / 2.f,
+			ib.position.y + ib.size.y / 2.f
+			});
+		icon.setPosition(pos);
+		m_window.draw(icon);
 	}
 }
 

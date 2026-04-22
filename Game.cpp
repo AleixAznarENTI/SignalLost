@@ -15,7 +15,7 @@ Game::Game()
     , m_map(MAP_W, MAP_H)
     , m_player({ 0.f, 0.f }, TILE_SIZE)   // posición provisional, reset() la fija
     , m_camera(m_window, TILE_SIZE)
-    , m_renderer(m_window, TILE_SIZE)
+    , m_renderer(m_window, TILE_SIZE, m_font)
     , m_flashlight(m_window.getSize(), 180.f)
     , m_energy(100.f, 5.f)
     , m_hud(m_window, m_font, m_audio)
@@ -90,8 +90,11 @@ void Game::update(float dt) {
     m_hud.update(dt, m_state);
 
     if (m_state == GameState::Dying) {
-        m_camera.follow(m_player.getPosition());
-        m_camera.updateShake(dt);
+        m_camera.update(
+            m_player.getPosition(),
+            sf::Vector2f(0.f,0.f),
+            dt
+        );
 
         if (!m_camera.isShaking()) {
             m_state = GameState::GameOver;
@@ -108,6 +111,7 @@ void Game::update(float dt) {
     updateHazardEffects(dt);
     updateEnemies(dt);
     updateBatteries(dt);
+    updatePowerUps(dt);
     updateEnemyProximity();
     checkEndConditions();
 
@@ -133,8 +137,7 @@ void Game::update(float dt) {
     // Sistemas que dependen de todo lo anterior
     m_particles.emit(m_player.getPosition(), dt);
     m_particles.update(dt);
-    m_camera.follow(m_player.getPosition());
-    m_camera.updateShake(dt);
+    m_camera.update(m_player.getPosition(), m_player.getVelocity(), dt);
     m_flashlight.update(m_player.getPosition(),
         m_camera.getView(),
         m_window, m_map, TILE_SIZE);
@@ -147,17 +150,28 @@ void Game::updateMovement(float dt) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) velocity.x -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) velocity.x += 1.f;
 
+    float speedMult = m_powerUps.isActive(PowerUpType::Speed) ? 1.8f : 1.f;
+    m_player.setSpeedMultiplier(speedMult);
+
     m_player.move(velocity, dt, m_map);
     m_energy.update(dt);
     m_audio.update(m_energy.getPercentage());
     for (const auto& enemy : m_enemies) {
-        if (enemy.catchesPlayer(m_player.getPosition(), TILE_SIZE)) {
+        if (!enemy.catchesPlayer(m_player.getPosition(), TILE_SIZE)) continue;
+
+        if (m_powerUps.hasShield()) {
+            m_powerUps.consumeShield();
+            m_camera.triggerShake(0.3f, 6.f);
+            m_hud.triggerZoneNotification("ESCUDO ROTO",
+                sf::Color(100, 180, 255));
+        }
+        else {
             m_state = GameState::Dying;
-            m_camera.triggerShake(0.5f, 10.f);
+            m_camera.triggerShake(0.6f, 12.f);
             m_audio.playGameOver();
             m_hud.triggerGameOver();
-            return;
         }
+        return;
     }
 }
 
@@ -229,8 +243,11 @@ void Game::updateRoomEffects(float dt) {
         m_energy.applyPenalty(15.f * dt);
     }
 
-    float flickerRadius = 160.f * (0.5f + 0.5f * m_energy.getPercentage());
-    if (currentRoom == RoomType::Danger) {
+    float baseRadius = m_powerUps.isActive(PowerUpType::Flashlight)
+        ? 280.f
+        : 160.f;
+
+    float flickerRadius = baseRadius * (0.5f + 0.5f * m_energy.getPercentage());    if (currentRoom == RoomType::Danger) {
         flickerRadius *= 1.f + 0.15f * std::sin(
             m_clock.getElapsedTime().asSeconds() * 15.f);
     }
@@ -271,6 +288,31 @@ void Game::updateBatteries(float dt) {
             m_stats.registerBatteryPickup();
         }
     }
+}
+
+void Game::updatePowerUps(float dt) {
+    m_powerUps.update(dt);
+
+    auto collected = m_powerUps.tryCollect(
+        m_player.getPosition(), TILE_SIZE);
+
+    if (!collected) return;
+
+    PowerUpType type = *collected;
+    m_audio.playBatteryPickup(); // reutilizamos sonido por ahora
+
+    // Efecto inmediato para instantáneos
+    if (type == PowerUpType::Battery) {
+        m_energy.restore(50.f);
+        m_hud.triggerBatteryPickup();
+        return; // no se activa como durable
+    }
+
+    m_powerUps.activate(type);
+
+    // Notificación de zona reutilizada para el power-up
+    PowerUpDef def = getPowerUpDef(type);
+    m_hud.triggerZoneNotification(def.name, def.color);
 }
 
 void Game::updateHazardEffects(float dt) {
@@ -396,6 +438,7 @@ void Game::render() {
 
         m_renderer.drawMap();
         m_renderer.drawBatteries(m_batteries);
+        m_renderer.drawPowerUps(m_powerUps.getPickups());
         m_renderer.drawSignal(m_signalPos);
         m_renderer.drawEnemies(m_enemies);
         m_renderer.drawPlayer(m_player.getPosition());
@@ -407,8 +450,15 @@ void Game::render() {
         m_window.setView(m_window.getDefaultView());
     }
 
-    if (m_state == GameState::Playing)
+    if (m_state == GameState::Playing) {
         m_minimap.draw(m_player.getPosition(), TILE_SIZE);
+        m_minimap.drawEnemyDots(
+            m_enemies,
+            m_player.getPosition(),
+            TILE_SIZE,
+            m_powerUps.isActive(PowerUpType::Radar)
+        );
+    }
 
     m_hud.draw(m_energy.getPercentage(), m_state);
 
@@ -429,6 +479,8 @@ void Game::initMap() {
     m_signalPos = sf::Vector2f(m_map.getSignalPosition()) * TILE_SIZE;
     spawnEnemies();
     m_stats.reset();
+    m_powerUps.generate(m_map, TILE_SIZE);
+    m_hud.setPowerUpSystem(&m_powerUps);
 }
 
 void Game::spawnEnemies() {

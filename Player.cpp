@@ -15,6 +15,7 @@ bool Player::collidesWithWall(sf::Vector2f point, const Map& map) const {
 }
 
 void Player::move(sf::Vector2f velocity, float dt, const Map& map) {
+	m_lastVelocity = velocity * m_speed * m_speedMultiplier;
 	if (velocity.x != 0.f && velocity.y != 0.f) {
 		velocity.x *= 1.f / std::sqrt(2.f);
 		velocity.y *= 1.f / std::sqrt(2.f);

@@ -4,6 +4,7 @@
 #include "TypewriterText.h"
 #include "AudioManager.h"
 #include "Map.h"
+#include "PowerUpSystem.h"
 
 class HUD
 {
@@ -19,6 +20,8 @@ public:
 	void setEnemyProximity(float alpha);
 	void setStats(float time, int batteries,
 				  float distance, int rooms);
+	void setCurrentRoom(RoomType room);
+	void setPowerUpSystem(const PowerUpSystem* system) { m_powerUps = system; }
 	// Feedback triggers
 	void triggerBatteryPickup();
 	void triggerDangerEnter();
@@ -27,7 +30,6 @@ public:
 	void triggerGameOver();
 	void triggerZoneNotification(const std::string& name, sf::Color color);
 
-	void setCurrentRoom(RoomType room);
 
 private:
 	sf::RenderWindow& m_window;
@@ -35,6 +37,7 @@ private:
 	AudioManager& m_audio;
 	TypewriterText m_typewriter;
 	sf::Clock m_clock;
+	const PowerUpSystem* m_powerUps = nullptr;
 
 	// Signal state
 	float m_signalAngle = 0.f;
@@ -73,4 +76,5 @@ private:
 	void drawFeedback();
 	void drawZoneNotification();
 	void drawScoreScreen(GameState state);
+	void drawActivePowerUps();
 };

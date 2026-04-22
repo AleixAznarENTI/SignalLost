@@ -18,6 +18,7 @@
 #include "Enemy.h"
 #include "StatsTracker.h"
 #include "PostProcess.h"
+#include "PowerUpSystem.h"
 
     class Game {
     public:
@@ -47,6 +48,7 @@
         StatsTracker m_stats;
         sf::Color m_currentLightColor = sf::Color(255, 240, 200);
         PostProcess m_postProcess;
+        PowerUpSystem m_powerUps;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;
@@ -76,6 +78,7 @@
         void updateBatteries(float dt);
         void updateHazardEffects(float dt);
         void updateEnemies(float dt);
+        void updatePowerUps(float dt);
         void updateEnemyProximity();
         void checkEndConditions();
         void spawnEnemies();

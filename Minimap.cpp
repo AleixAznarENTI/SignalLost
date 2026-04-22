@@ -1,5 +1,6 @@
 #include "Minimap.h"
 #include <cmath>
+#define M_PI  3.14159265358979323846
 
 Minimap::Minimap(sf::RenderWindow& window, float tileSize, float margin)
     : m_window(window)
@@ -121,6 +122,41 @@ void Minimap::revealAt(sf::Vector2i playerTile,
     if (anyNew) m_texture.display();
 }
 
+void Minimap::drawEnemyDots(const std::vector<Enemy>& enemies,
+    sf::Vector2f              playerPos,
+    float                     worldTileSize,
+    bool                      radarActive)
+{
+    if (!radarActive) return;
+
+    sf::View prev = m_window.getView();
+    m_window.setView(m_window.getDefaultView());
+
+    float screenW = static_cast<float>(m_window.getSize().x);
+    float screenH = static_cast<float>(m_window.getSize().y);
+    float miniW = m_mapW * m_tileSize;
+    float miniH = m_mapH * m_tileSize;
+    sf::Vector2f origin(m_margin, m_margin);
+
+    for (const auto& enemy : enemies) {
+        sf::Vector2i tile(
+            static_cast<int>(enemy.getPosition().x / worldTileSize),
+            static_cast<int>(enemy.getPosition().y / worldTileSize)
+        );
+
+        sf::CircleShape dot(3.f);
+        dot.setFillColor(sf::Color(255, 60, 60, 200));
+        dot.setOrigin({ 3.f, 3.f });
+        dot.setPosition({
+            origin.x + tile.x * m_tileSize,
+            origin.y + tile.y * m_tileSize
+            });
+        m_window.draw(dot);
+    }
+
+    m_window.setView(prev);
+}
+
 bool Minimap::isInCone(int   dx, int   dy,
     float flashAngle,
     float halfAperture) const
@@ -129,10 +165,10 @@ bool Minimap::isInCone(int   dx, int   dy,
         static_cast<float>(dy),
         static_cast<float>(dx)
     );
-
+    
     float diff = tileAngle - flashAngle;
-    while (diff > 3.14159265f) diff -= 2.f * 3.14159265f;
-    while (diff < -3.14159265f) diff += 2.f * 3.14159265f;
+    while (diff > M_PI) diff -= 2.f * M_PI;
+    while (diff < -M_PI) diff += 2.f * M_PI;
 
     return std::abs(diff) < halfAperture;
 }
@@ -148,8 +184,8 @@ void Minimap::draw(sf::Vector2f playerWorldPos, float worldTileSize) {
     float miniH = m_mapH * m_tileSize;
 
     sf::Vector2f miniOrigin(
-        screenW - miniW - m_margin,
-        screenH - miniH - m_margin
+        m_margin,
+        m_margin
     );
 
     sf::RectangleShape border({ miniW, miniH });

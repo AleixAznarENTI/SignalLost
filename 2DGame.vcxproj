@@ -145,6 +145,8 @@
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PostProcess.cpp" />
+    <ClCompile Include="PowerUp.cpp" />
+    <ClCompile Include="PowerUpSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="StatsTracker.cpp" />
     <ClCompile Include="TypewriterText.cpp" />
@@ -166,6 +168,8 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PostProcess.h" />
+    <ClInclude Include="PowerUp.h" />
+    <ClInclude Include="PowerUpSystem.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="StatsTracker.h" />

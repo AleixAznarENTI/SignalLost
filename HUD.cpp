@@ -252,6 +252,7 @@ void HUD::draw(float energyPercent, GameState state) {
 	case GameState::Dying:
 		drawEnergyBar(energyPercent);
 		drawSignalIndicator();
+		drawActivePowerUps();
 		drawFeedback();
 		drawZoneNotification();
 		break;
@@ -452,6 +453,73 @@ void HUD::drawFeedback() {
 		drawVignette(sf::Color(200, 20, 20), finalAlpha);
 	}
 }
+
+void HUD::drawActivePowerUps() {
+	if (!m_powerUps) return;
+
+	const auto& actives = m_powerUps->getActives();
+	if (actives.empty()) return;
+
+	float screenW = static_cast<float>(m_window.getSize().x);
+	float startX = screenW - 60.f;
+	float startY = 130.f;  // debajo de la brújula
+	float iconSize = 32.f;
+	float gap = 8.f;
+
+	for (size_t i = 0; i < actives.size(); ++i) {
+		const auto& active = actives[i];
+		PowerUpDef  def = getPowerUpDef(active.type);
+		float       y = startY + i * (iconSize + gap);
+
+		// Fondo del icono
+		sf::RectangleShape bg({ iconSize, iconSize });
+		bg.setOrigin({ iconSize / 2.f, 0.f });
+		bg.setPosition({ startX, y });
+		bg.setFillColor(sf::Color(0, 0, 0, 160));
+		bg.setOutlineColor(sf::Color(
+			def.color.r, def.color.g, def.color.b, 180));
+		bg.setOutlineThickness(1.5f);
+		m_window.draw(bg);
+
+		// Icono letra
+		sf::Text icon(m_font, def.icon, 18);
+		icon.setFillColor(def.color);
+		sf::FloatRect ib = icon.getLocalBounds();
+		icon.setOrigin({
+			ib.position.x + ib.size.x / 2.f,
+			ib.position.y + ib.size.y / 2.f
+			});
+		icon.setPosition({ startX, y + iconSize / 2.f });
+		m_window.draw(icon);
+
+		// Barra de tiempo restante
+		if (active.timeRemaining > 0.f) {
+			float maxDur = getPowerUpDef(active.type).duration;
+			float percent = active.timeRemaining / maxDur;
+
+			sf::RectangleShape timerBg({ iconSize, 4.f });
+			timerBg.setOrigin({ iconSize / 2.f, 0.f });
+			timerBg.setPosition({ startX, y + iconSize + 2.f });
+			timerBg.setFillColor(sf::Color(40, 40, 40));
+			m_window.draw(timerBg);
+
+			sf::RectangleShape timerFill({ iconSize * percent, 4.f });
+			timerFill.setOrigin({ iconSize / 2.f, 0.f });
+			timerFill.setPosition({ startX, y + iconSize + 2.f });
+			timerFill.setFillColor(def.color);
+			m_window.draw(timerFill);
+		}
+		else if (active.type == PowerUpType::Shield) {
+			// Escudo: símbolo estático en vez de barra
+			sf::Text shield(m_font, "■", 8);
+			shield.setFillColor(sf::Color(
+				def.color.r, def.color.g, def.color.b, 180));
+			shield.setPosition({ startX - 6.f, y + iconSize + 2.f });
+			m_window.draw(shield);
+		}
+	}
+}
+
 void HUD::drawZoneNotification() {
 	if (m_zoneNotifTimer <= 0.f) return;
 

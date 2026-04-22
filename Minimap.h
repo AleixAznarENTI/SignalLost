@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "Map.h"
+#include "Enemy.h"
 
 class Minimap {
 public:
@@ -17,6 +18,10 @@ public:
                   float        worldTileSize);
 
     void draw(sf::Vector2f playerWorldPos, float worldTileSize);
+    void drawEnemyDots(const std::vector<Enemy>& enemies,
+        sf::Vector2f playerWorldPos,
+        float worldTileSize,
+        bool radarActive);
 
 private:
     sf::RenderWindow& m_window;
@@ -40,4 +45,5 @@ private:
     bool hasLineOfSight(sf::Vector2i from,
                         sf::Vector2i to,
                         const Map&   map) const;
+
 };
