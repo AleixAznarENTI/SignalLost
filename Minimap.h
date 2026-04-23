@@ -22,11 +22,13 @@ public:
         sf::Vector2f playerWorldPos,
         float worldTileSize,
         bool radarActive);
+    void setAlpha(uint8_t alpha) { m_alpha = alpha; }
 
 private:
     sf::RenderWindow& m_window;
     float             m_tileSize;
     float             m_margin;
+    uint8_t m_alpha = 255;
 
     sf::RenderTexture m_texture;
     sf::RectangleShape m_tileShape;

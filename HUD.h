@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <cmath>
 #include "GameState.h"
 #include "TypewriterText.h"
 #include "AudioManager.h"
@@ -14,6 +15,7 @@ public:
 	void update(float dt, GameState gameState);
 	void draw(float energyPercentage, GameState gameState);
 	void onStateChanged(GameState newState);
+	uint8_t getUIAlpha() const;
 	void setSignalInfo(sf::Vector2f playerPos,
 					   sf::Vector2f signalPos,
 					   bool			inControlRoom);
@@ -23,7 +25,6 @@ public:
 	void setCurrentRoom(RoomType room);
 	void setPowerUpSystem(const PowerUpSystem* system) { m_powerUps = system; }
 	void setWakingTimer(float timer) { m_wakingTimer = timer; }
-	
 	// Feedback triggers
 	void triggerBatteryPickup();
 	void triggerDangerEnter();
@@ -31,7 +32,7 @@ public:
 	void triggerSignalFound();
 	void triggerGameOver();
 	void triggerZoneNotification(const std::string& name, sf::Color color);
-
+	void triggerUIFadeIn() { m_uiFadeTimer = 0.f; }
 
 private:
 	sf::RenderWindow& m_window;
@@ -41,6 +42,8 @@ private:
 	sf::Clock m_clock;
 	const PowerUpSystem* m_powerUps = nullptr;
 	float m_wakingTimer = 0.f;
+	float m_uiFadeTimer = 0.f;
+	
 
 	// Signal state
 	float m_signalAngle = 0.f;
@@ -80,4 +83,8 @@ private:
 	void drawZoneNotification();
 	void drawScoreScreen(GameState state);
 	void drawActivePowerUps();
+
+
+
+	static constexpr float UI_FADE_DURATION = 1.2f;
 };

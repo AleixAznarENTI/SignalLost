@@ -145,7 +145,7 @@ void Minimap::drawEnemyDots(const std::vector<Enemy>& enemies,
         );
 
         sf::CircleShape dot(3.f);
-        dot.setFillColor(sf::Color(255, 60, 60, 200));
+        dot.setFillColor(sf::Color(255, 60, 60, m_alpha));
         dot.setOrigin({ 3.f, 3.f });
         dot.setPosition({
             origin.x + tile.x * m_tileSize,
@@ -174,12 +174,13 @@ bool Minimap::isInCone(int   dx, int   dy,
 }
 
 void Minimap::draw(sf::Vector2f playerWorldPos, float worldTileSize) {
+    if (m_alpha == 0) return;
+
     sf::View prev = m_window.getView();
     m_window.setView(m_window.getDefaultView());
 
     float screenW = static_cast<float>(m_window.getSize().x);
     float screenH = static_cast<float>(m_window.getSize().y);
-
     float miniW = m_mapW * m_tileSize;
     float miniH = m_mapH * m_tileSize;
 
@@ -188,21 +189,24 @@ void Minimap::draw(sf::Vector2f playerWorldPos, float worldTileSize) {
         m_margin
     );
 
-    sf::RectangleShape border({ miniW, miniH });
-    border.setPosition(miniOrigin);
-    border.setFillColor(sf::Color::Transparent);
-    border.setOutlineColor(sf::Color(80, 80, 120, 180));
-    border.setOutlineThickness(1.f);
-
+    // Background
     sf::RectangleShape bg({ miniW, miniH });
     bg.setPosition(miniOrigin);
     bg.setFillColor(sf::Color(0, 0, 0, 160));
     m_window.draw(bg);
 
+    // Map texture
     sf::Sprite sprite(m_texture.getTexture());
     sprite.setPosition(miniOrigin);
+    sprite.setColor(sf::Color(255, 255, 255, m_alpha));
     m_window.draw(sprite);
 
+    // Border
+    sf::RectangleShape border({ miniW, miniH });
+    border.setPosition(miniOrigin);
+    border.setFillColor(sf::Color::Transparent);
+    border.setOutlineColor(sf::Color(80, 80, 120, 180));
+    border.setOutlineThickness(1.f);
     m_window.draw(border);
 
     sf::Vector2i playerTile(
@@ -211,7 +215,7 @@ void Minimap::draw(sf::Vector2f playerWorldPos, float worldTileSize) {
     );
 
     sf::CircleShape playerDot(2.5f);
-    playerDot.setFillColor(sf::Color(200, 230, 255));
+    playerDot.setFillColor(sf::Color(200, 230, 255, m_alpha));
     playerDot.setOrigin({ 2.5f, 2.5f });
     playerDot.setPosition({
         miniOrigin.x + playerTile.x * m_tileSize,

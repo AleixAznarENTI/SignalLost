@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 HUD::HUD(sf::RenderWindow& window, const sf::Font& font, AudioManager& audio)
 	: m_window(window)
@@ -66,6 +67,9 @@ void HUD::update(float dt, GameState state) {
 	tick(m_signalFlashTimer);
 	tick(m_gameOverFadeTimer);
 	tick(m_zoneNotifTimer);
+
+	if (state == GameState::Playing && m_uiFadeTimer < UI_FADE_DURATION)
+		m_uiFadeTimer += dt;
 }
 
 void HUD::setSignalInfo(sf::Vector2f playerPos,
@@ -87,7 +91,7 @@ void HUD::drawScoreScreen(GameState state) {
 
 	// Título según estado
 	std::string title = (state == GameState::Victory)
-		? "MISION COMPLETADA" : "MISION FALLIDA";
+		? "MISION COMPLETED" : "MISION FAILED";
 	sf::Color titleColor = (state == GameState::Victory)
 		? sf::Color(80, 255, 120) : sf::Color(220, 60, 60);
 
@@ -125,11 +129,11 @@ void HUD::drawScoreScreen(GameState state) {
 	};
 
 	std::vector<Metric> metrics = {
-		{ "TIEMPO",            timeStr.str()                              },
-		{ "BATERIAS",          std::to_string(m_statBatteries)            },
-		{ "DISTANCIA",         std::to_string(static_cast<int>(
-								   m_statDistance)) + " tiles"            },
-		{ "SALAS VISITADAS",   std::to_string(m_statRooms)                },
+		{ "TIME",            timeStr.str()                              },
+		{ "BATTERIES",          std::to_string(m_statBatteries)            },
+		{ "DISTANCE",         std::to_string(static_cast<int>(
+								   m_statDistance)) + " steps"            },
+		{ "VISITED ROOMS",   std::to_string(m_statRooms)                },
 	};
 
 	float startY = h / 2.f - 60.f;
@@ -169,20 +173,23 @@ void HUD::drawScoreScreen(GameState state) {
 }
 
 void HUD::drawEnergyBar(float energyPercentage) {
+	uint8_t a = getUIAlpha();
 	const float barWidth  = 200.f;
 	const float barHeight = 14.f;
 	const float margin    = 16.f;
 	float screenH		  = static_cast<float>(m_window.getSize().y);
 
+	// Background
 	sf::RectangleShape bg({ barWidth, barHeight });
-	bg.setFillColor(sf::Color(40, 40, 40));
+	bg.setFillColor(sf::Color(40, 40, 40, a));
 	bg.setPosition({ margin, screenH - margin - barHeight });
 	m_window.draw(bg);
 
+	// Filler
 	sf::Color fillColor;
-	if (energyPercentage > .5f) fillColor = sf::Color(80, 220, 120);
-	else if (energyPercentage > .25f) fillColor = sf::Color(240, 200, 50);
-	else fillColor = sf::Color(220, 60, 60);
+	if (energyPercentage > .5f) fillColor = sf::Color(80, 220, 120, a);
+	else if (energyPercentage > .25f) fillColor = sf::Color(240, 200, 50, a);
+	else fillColor = sf::Color(220, 60, 60, a);
 
 	sf::RectangleShape fill({ barWidth * energyPercentage, barHeight });
 	fill.setFillColor(fillColor);
@@ -192,7 +199,7 @@ void HUD::drawEnergyBar(float energyPercentage) {
 	// Border
 	sf::RectangleShape border({ barWidth, barHeight });
 	border.setFillColor(sf::Color::Transparent);
-	border.setOutlineColor(sf::Color(150, 150, 150));
+	border.setOutlineColor(sf::Color(150, 150, 150, a));
 	border.setOutlineThickness(1.f);
 	border.setPosition(bg.getPosition());
 	m_window.draw(border);
@@ -211,7 +218,7 @@ void HUD::drawEnergyBar(float energyPercentage) {
 
 	// Etiqueta
 	sf::Text label(m_font, "ENERGY", 11);
-	label.setFillColor(sf::Color(180, 180, 180));
+	label.setFillColor(sf::Color(180, 180, 180, a));
 	label.setPosition({ margin, screenH - margin - barHeight - 16.f });
 	m_window.draw(label);
 }
@@ -287,6 +294,7 @@ void HUD::setEnemyProximity(float alpha) {
 }
 void HUD::drawSignalIndicator() {
 	if (!m_showIndicator) return;
+	uint8_t a = getUIAlpha();
 
 	// Indicator position: top right corner
 	float screenW = static_cast<float>(m_window.getSize().x);
@@ -297,8 +305,8 @@ void HUD::drawSignalIndicator() {
 	sf::CircleShape bg(40.f);
 	bg.setOrigin({ 40.f, 40.f });
 	bg.setPosition(center);
-	bg.setFillColor(sf::Color(0, 0, 0, 160));
-	bg.setOutlineColor(sf::Color(40, 60, 90, 200));
+	bg.setFillColor(sf::Color(0, 0, 0, static_cast<uint8_t>(160 * a / 255.f)));
+	bg.setOutlineColor(sf::Color(40, 60, 90, static_cast<uint8_t>(200 * a / 255.f)));
 	bg.setOutlineThickness(2.f);
 	m_window.draw(bg);
 
@@ -310,8 +318,8 @@ void HUD::drawSignalIndicator() {
 	);
 
 	sf::Vertex line[] = {
-		sf::Vertex(center, sf::Color(80, 255, 120)),
-		sf::Vertex(tip,	   sf::Color(80,255,120))
+		sf::Vertex(center, sf::Color(80, 255, 120, a)),
+		sf::Vertex(tip,	   sf::Color(80, 255, 120, a))
 	};
 	m_window.draw(line, 2, sf::PrimitiveType::Lines);
 
@@ -329,12 +337,12 @@ void HUD::drawSignalIndicator() {
 	);
 
 	sf::Vertex arrow1[] = {
-		sf::Vertex(tip,	  sf::Color(80,255,120)),
-		sf::Vertex(head1, sf::Color(80,255,120))
+		sf::Vertex(tip,	  sf::Color(80, 255, 120, a)),
+		sf::Vertex(head1, sf::Color(80, 255, 120, a))
 	};
 	sf::Vertex arrow2[] = {
-	sf::Vertex(tip,	  sf::Color(80,255,120)),
-	sf::Vertex(head1, sf::Color(80,255,120))
+	sf::Vertex(tip,	  sf::Color(80, 255, 120, a)),
+	sf::Vertex(head1, sf::Color(80, 255, 120, a))
 	};
 	m_window.draw(arrow1, 2, sf::PrimitiveType::Lines);
 	m_window.draw(arrow2, 2, sf::PrimitiveType::Lines);
@@ -344,7 +352,7 @@ void HUD::drawSignalIndicator() {
 	std::string distText = std::to_string(static_cast<int>(distInTiles));
 
 	sf::Text dist(m_font, distText, 11);
-	dist.setFillColor(sf::Color(80, 255, 120, 200));
+	dist.setFillColor(sf::Color(80, 255, 120, static_cast<uint8_t>(200 * a / 255.f)));
 
 	sf::FloatRect b = dist.getLocalBounds();
 	dist.setOrigin({ b.position.x + b.size.x / 2.f,
@@ -354,7 +362,7 @@ void HUD::drawSignalIndicator() {
 
 	// --- "CONTROL" label ---
 	sf::Text label(m_font, "CONTROL", 9);
-	label.setFillColor(sf::Color(40, 60, 90, 220));
+	label.setFillColor(sf::Color(40, 60, 90, static_cast<uint8_t>(220 * a / 255.f)));
 
 	sf::FloatRect lb = label.getLocalBounds();
 	label.setOrigin({ lb.position.x + lb.size.x / 2.f,
@@ -631,4 +639,10 @@ void HUD::setStats(float time, int batteries,
 	m_statBatteries = batteries;
 	m_statDistance = distance;
 	m_statRooms = rooms;
+}
+
+uint8_t HUD::getUIAlpha() const {
+	float progress = std::min(m_uiFadeTimer / UI_FADE_DURATION, 1.f);
+	progress = progress * progress;
+	return static_cast<uint8_t>(progress * 255.f);
 }

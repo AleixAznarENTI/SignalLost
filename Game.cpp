@@ -115,6 +115,7 @@ void Game::update(float dt) {
         if (m_wakingTimer >= WAKING_DURATION) {
             m_state = GameState::Playing;
             m_flashlight.setRadius(160.f); // radio normal
+            m_hud.triggerUIFadeIn();
         }
         return;
     }
@@ -194,7 +195,7 @@ void Game::updateMovement(float dt) {
         if (m_powerUps.hasShield()) {
             m_powerUps.consumeShield();
             m_camera.triggerShake(0.3f, 6.f);
-            m_hud.triggerZoneNotification("ESCUDO ROTO",
+            m_hud.triggerZoneNotification("SHIELD BROKEN",
                 sf::Color(100, 180, 255));
         }
         else {
@@ -484,6 +485,7 @@ void Game::render() {
 
     // --- Minimap (only while playing) ---
     if (m_state == GameState::Playing) {
+        m_minimap.setAlpha(m_hud.getUIAlpha());
         m_minimap.draw(m_player.getPosition(), TILE_SIZE);
         m_minimap.drawEnemyDots(
             m_enemies,
