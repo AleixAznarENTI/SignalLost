@@ -22,6 +22,8 @@ public:
 				  float distance, int rooms);
 	void setCurrentRoom(RoomType room);
 	void setPowerUpSystem(const PowerUpSystem* system) { m_powerUps = system; }
+	void setWakingTimer(float timer) { m_wakingTimer = timer; }
+	
 	// Feedback triggers
 	void triggerBatteryPickup();
 	void triggerDangerEnter();
@@ -38,6 +40,7 @@ private:
 	TypewriterText m_typewriter;
 	sf::Clock m_clock;
 	const PowerUpSystem* m_powerUps = nullptr;
+	float m_wakingTimer = 0.f;
 
 	// Signal state
 	float m_signalAngle = 0.f;

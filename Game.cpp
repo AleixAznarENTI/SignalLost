@@ -66,8 +66,8 @@ void Game::processInput() {
          if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
             if (key->code == sf::Keyboard::Key::Space &&
                 m_state == GameState::Intro) {
-                m_state = GameState::Playing;
-                m_hud.onStateChanged(GameState::Playing);
+                m_state = GameState::Waking;
+                m_wakingTimer = 0.f;
                 m_audio.playAmbient();
             }
             if (key->code == sf::Keyboard::Key::R &&
@@ -89,6 +89,38 @@ void Game::processInput() {
 void Game::update(float dt) {
     m_hud.update(dt, m_state);
 
+    // --- Waking ---
+    if (m_state == GameState::Waking) {
+        m_wakingTimer += dt;
+        m_hud.setWakingTimer(m_wakingTimer);
+
+        // Fase 2: linterna arranca progresivamente
+        float lightProgress = 0.f;
+        if (m_wakingTimer > 0.8f) {
+            lightProgress = (m_wakingTimer - 0.8f) / 0.7f; // 0→1 en 0.7s
+            lightProgress = std::min(lightProgress, 1.f);
+
+            // Parpadeo al arrancar
+            float flicker = std::abs(std::sin(m_wakingTimer * 20.f));
+            lightProgress *= (0.6f + 0.4f * flicker);
+        }
+
+        m_flashlight.setRadius(160.f * lightProgress);
+        m_camera.update(m_player.getPosition(),
+            sf::Vector2f(0.f, 0.f), dt);
+        m_flashlight.update(m_player.getPosition(),
+            m_camera.getView(),
+            m_window, m_map, TILE_SIZE);
+
+        if (m_wakingTimer >= WAKING_DURATION) {
+            m_state = GameState::Playing;
+            m_flashlight.setRadius(160.f); // radio normal
+        }
+        return;
+    }
+
+
+    // --- Dying ---
     if (m_state == GameState::Dying) {
         m_camera.update(
             m_player.getPosition(),
@@ -432,7 +464,8 @@ void Game::checkEndConditions() {
 // ----------------------------------------------------------------
 void Game::render() {
     m_window.clear(sf::Color(10, 10, 20));
-    
+
+    // --- World rendering (everything except Intro) ---
     if (m_state != GameState::Intro) {
         m_window.setView(m_camera.getView());
 
@@ -444,12 +477,12 @@ void Game::render() {
         m_renderer.drawPlayer(m_player.getPosition());
         m_flashlight.draw(m_window);
         m_particles.draw(m_window);
-
     }
     else {
         m_window.setView(m_window.getDefaultView());
     }
 
+    // --- Minimap (only while playing) ---
     if (m_state == GameState::Playing) {
         m_minimap.draw(m_player.getPosition(), TILE_SIZE);
         m_minimap.drawEnemyDots(
@@ -460,9 +493,32 @@ void Game::render() {
         );
     }
 
+    // --- HUD ---
     m_hud.draw(m_energy.getPercentage(), m_state);
 
-    m_postProcess.draw(0.4f); // Post Process ALWAYS LAST
+    // --- Waking overlay — fades from black as the player "wakes up" ---
+    if (m_state == GameState::Waking) {
+        float alpha = 0.f;
+
+        if (m_wakingTimer < 0.8f) {
+            alpha = 1.f; // fully black during boot phase
+        }
+        else {
+            float fadeProgress = (m_wakingTimer - 0.8f) / (WAKING_DURATION - 0.8f);
+            alpha = 1.f - std::min(fadeProgress, 1.f);
+            alpha = alpha * alpha; // quadratic — more dramatic
+        }
+
+        sf::RectangleShape overlay(sf::Vector2f(m_window.getSize()));
+        overlay.setFillColor(sf::Color(0, 0, 0,
+            static_cast<uint8_t>(alpha * 255.f)));
+
+        m_window.setView(m_window.getDefaultView());
+        m_window.draw(overlay);
+    }
+
+    // --- Post process always last ---
+    m_postProcess.draw(0.4f);
     m_window.display();
 }
 // ----------------------------------------------------------------

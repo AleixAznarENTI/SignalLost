@@ -1,7 +1,5 @@
 #pragma once
-
 #include <SFML/Graphics.hpp>
-
 #include "Map.h"
 #include "Player.h"
 #include "Camera.h"
@@ -43,12 +41,13 @@
         AudioManager   m_audio;
         ParticleSystem m_particles;
         Minimap        m_minimap;
-        std::vector<Enemy> m_enemies;
-        bool m_enemyAlertPlayed = false;
         StatsTracker m_stats;
-        sf::Color m_currentLightColor = sf::Color(255, 240, 200);
         PostProcess m_postProcess;
         PowerUpSystem m_powerUps;
+        sf::Color m_currentLightColor = sf::Color(255, 240, 200);
+        std::vector<Enemy> m_enemies;
+        bool m_enemyAlertPlayed = false;
+        float m_wakingTimer = 0.f;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;
@@ -86,6 +85,7 @@
         static constexpr int   MAP_W = 60;
         static constexpr int   MAP_H = 60;
         static constexpr float TILE_SIZE = 24.f;
+        static constexpr float WAKING_DURATION = 2.5f;
 };
 
 

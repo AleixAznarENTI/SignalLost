@@ -248,6 +248,22 @@ void HUD::draw(float energyPercent, GameState state) {
 	case GameState::Intro:
 		drawIntro();
 		break;
+	case GameState::Waking:
+		if (m_wakingTimer < 0.8f) {
+			sf::Text bootText(m_font, "...starting systems", 14);
+			bootText.setFillColor(sf::Color(80, 120, 80, 180));
+			sf::FloatRect b = bootText.getLocalBounds();
+			bootText.setOrigin({
+				b.position.x + b.size.x / 2.f,
+				b.position.y + b.size.y / 2.f
+				});
+			bootText.setPosition({
+				m_window.getSize().x / 2.f,
+				m_window.getSize().y / 2.f + 60.f
+				});
+			m_window.draw(bootText);
+		}
+		break;
 	case GameState::Playing:
 	case GameState::Dying:
 		drawEnergyBar(energyPercent);
