@@ -37,11 +37,12 @@ void Camera::update(sf::Vector2f targetPos,
 
     // Lerp del zoom — más lento que la posición para que no maree
     float zt = 1.f - std::exp(-ZOOM_LERP * dt);
+    m_pauseZoom = m_pauseZoom + (m_pauseTarget - m_pauseZoom) * zt;
     m_currentZoom = m_currentZoom + (m_targetZoom - m_currentZoom) * zt;
 
     // Aplicamos el zoom como tamaño de vista
     sf::Vector2f baseSize = sf::Vector2f(m_window.getSize());
-    m_view.setSize(baseSize * m_currentZoom);
+    m_view.setSize(baseSize * m_currentZoom * m_pauseZoom);
 
     // Aplicamos el shake encima
     updateShake(dt);
@@ -68,4 +69,8 @@ void Camera::updateShake(float dt) {
         m_baseCenter.x + offsetX,
         m_baseCenter.y + offsetY
         });
+}
+
+void Camera::setPauseZoom(bool paused) {
+    m_pauseTarget = paused ? PAUSE_ZOOM_OUT : 1.f;
 }

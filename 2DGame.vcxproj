@@ -143,6 +143,7 @@
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Minimap.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="PauseMenu.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PostProcess.cpp" />
     <ClCompile Include="PowerUp.cpp" />
@@ -166,6 +167,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="Minimap.h" />
     <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="PauseMenu.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PostProcess.h" />
     <ClInclude Include="PowerUp.h" />

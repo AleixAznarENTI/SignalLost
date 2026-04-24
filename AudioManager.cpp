@@ -171,3 +171,18 @@ void AudioManager::stopAll() {
 	m_heartbeatPlaying = false;
 	m_alertPlayerd = false;
 }
+
+void AudioManager::setMasterVolume(float volume) {
+	m_signalSound.value().setVolume(volume);
+	m_gameOver.value().setVolume(volume);
+	m_batterySound.value().setVolume(volume);
+	m_typewriterSound.value().setVolume(volume * 0.6f);
+}
+
+void AudioManager::setMusicVolume(float volume) {
+	m_ambient.setVolume(volume * 0.4f);
+	m_heartbeat.setVolume(
+		m_heartbeat.getVolume() > 0.f ? volume * 0.7f : 0.f);
+	m_stalkerMusic.setVolume(
+		m_stalkerMusic.getVolume() > 0.f ? volume * 0.5f : 0.f);
+}

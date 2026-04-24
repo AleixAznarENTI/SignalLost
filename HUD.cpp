@@ -328,6 +328,9 @@ void HUD::draw(float energyPercent, GameState state) {
 		drawFeedback();
 		drawEndScreen(state);
 		break;
+	case GameState::Paused:
+		drawEnergyBar(energyPercent);  // la barra sigue visible detrás
+		break;
 	}
 	
 	m_window.setView(prev);

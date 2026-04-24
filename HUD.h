@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <cmath>
 #include "GameState.h"
 #include "TypewriterText.h"
 #include "AudioManager.h"

@@ -17,6 +17,7 @@
 #include "StatsTracker.h"
 #include "PostProcess.h"
 #include "PowerUpSystem.h"
+#include "PauseMenu.h"
 
     class Game {
     public:
@@ -45,6 +46,7 @@
         PostProcess      m_postProcess;
         PowerUpSystem    m_powerUps;
         HazardZoneSystem m_hazards;
+        PauseMenu        m_pauseMenu;
 
         // --- Entities ---
         std::vector<Battery> m_batteries;
@@ -58,6 +60,10 @@
         HazardType   m_currentHazard = HazardType::None;
         HazardType   m_prevHazard = HazardType::None;
         sf::Color    m_currentLightColor = sf::Color(255, 240, 200);
+
+        // --- Volumes ---
+        float m_masterVolume = 0.7f;
+        float m_musicVolume = 0.4f;
 
         // --- Timers ---
         float m_wakingTimer = 0.f;

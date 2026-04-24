@@ -24,6 +24,7 @@ Game::Game()
     , m_prevState(GameState::Intro)
     , m_minimap(m_window, 3.f, 16.f)
     , m_postProcess(m_window)
+    , m_pauseMenu(m_window, m_font)
 {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
@@ -37,6 +38,27 @@ Game::Game()
 
     m_hud.onStateChanged(GameState::Intro);
     initMap();
+
+    // --- Pause menu items ---
+    m_pauseMenu.addItem("RESUME", [this]() {
+        m_state = GameState::Playing;
+        m_camera.setPauseZoom(false);
+        });
+
+    m_pauseMenu.addItem("RESTART", [this]() {
+        reset();
+        m_camera.setPauseZoom(false);
+        });
+
+    m_pauseMenu.addSlider("MASTER VOLUME",
+        &m_masterVolume, 0.f, 1.f);
+
+    m_pauseMenu.addSlider("MUSIC VOLUME",
+        &m_musicVolume, 0.f, 1.f);
+
+    m_pauseMenu.addItem("QUIT", [this]() {
+        m_window.close();
+    });
 }
 
 // ----------------------------------------------------------------
@@ -63,20 +85,41 @@ void Game::processInput() {
         if (event->is<sf::Event::Closed>())
             m_window.close();
 
-         if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+        if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+
+            // Escape: pausa/reanuda durante Playing, cierra en otros estados
+            if (key->code == sf::Keyboard::Key::Escape) {
+                if (m_state == GameState::Playing) {
+                    m_state = GameState::Paused;
+                    m_camera.setPauseZoom(true);
+                    m_pauseMenu.open();
+                }
+                else if (m_state == GameState::Paused) {
+                    m_state = GameState::Playing;
+                    m_camera.setPauseZoom(false);
+                }
+                else {
+                    m_window.close();
+                }
+            }
+
             if (key->code == sf::Keyboard::Key::Space &&
                 m_state == GameState::Intro) {
                 m_state = GameState::Waking;
                 m_wakingTimer = 0.f;
                 m_audio.playAmbient();
             }
+
             if (key->code == sf::Keyboard::Key::R &&
                 m_state != GameState::Playing &&
-                m_state != GameState::Intro) {
+                m_state != GameState::Intro &&
+                m_state != GameState::Paused) {
                 reset();
             }
-            if (key->code == sf::Keyboard::Key::Escape)
-                m_window.close();
+
+            // Menú de pausa — delegamos input al PauseMenu
+            if (m_state == GameState::Paused)
+                m_pauseMenu.handleInput(*event);
         }
     }
 }
@@ -88,6 +131,16 @@ void Game::processInput() {
 
 void Game::update(float dt) {
     m_hud.update(dt, m_state);
+
+    if (m_state == GameState::Paused) {
+        m_camera.update(m_player.getPosition(),
+            sf::Vector2f(0.f, 0.f), dt);
+
+        // Aplicar volúmenes desde los sliders
+        m_audio.setMasterVolume(m_masterVolume * 100.f);
+        m_audio.setMusicVolume(m_musicVolume * 100.f);
+        return;
+    }
 
     // --- Waking ---
     if (m_state == GameState::Waking) {
@@ -629,6 +682,12 @@ void Game::render() {
 
     // --- HUD ---
     m_hud.draw(m_energy.getPercent(), m_state);
+
+    // --- Pause menu ---
+    if (m_state == GameState::Paused) {
+        m_window.setView(m_window.getDefaultView());
+        m_pauseMenu.draw();
+    }
 
     // --- Post process always last ---
     m_postProcess.draw(0.4f);

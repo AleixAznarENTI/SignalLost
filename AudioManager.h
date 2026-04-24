@@ -18,6 +18,9 @@ public:
 	void updateStalkerMusic(float proximityAlpha);
 	void updateZoneAudio(HazardType currentHazard);
 
+	void setMasterVolume(float volume); // 0-100
+	void setMusicVolume(float volume);
+
 	void playSignalFound();
 	void playGameOver();
 	void playBatteryPickup();
