@@ -137,6 +137,47 @@ void Game::update(float dt) {
         return;
     }
 
+    // --- Winning ---
+    if (m_state == GameState::Winning) {
+        m_winTimer += dt;
+
+        // Linterna se expande progresivamente
+        float expandProgress = std::min(m_winTimer / 2.0f, 1.f);
+        float expandedRadius = 160.f + (1200.f - 160.f) *
+            expandProgress * expandProgress;
+        m_flashlight.setRadius(expandedRadius);
+
+        // Color de linterna → verde esperanzador
+        float t = std::min(m_winTimer / 1.5f, 1.f);
+        m_flashlight.setLightColor(sf::Color(
+            static_cast<uint8_t>(255 - 175 * t),  // 255 → 80
+            static_cast<uint8_t>(240 + 15 * t),  // 240 → 255
+            static_cast<uint8_t>(200 - 120 * t)   // 200 → 80
+        ));
+
+        // Partículas continuas en la señal durante la secuencia
+        if (m_winTimer < 2.f)
+            m_particles.emitBurst(m_signalPos,
+                sf::Color(80, 255, 120), 3);
+
+        m_particles.update(dt);
+        m_camera.update(m_player.getPosition(),
+            sf::Vector2f(0.f, 0.f), dt);
+        m_flashlight.update(m_player.getPosition(),
+            m_camera.getView(),
+            m_window, m_map, TILE_SIZE);
+
+        if (m_winTimer >= WIN_DURATION) {
+            m_state = GameState::Victory;
+            m_prevState = GameState::Victory;
+            m_hud.onStateChanged(GameState::Victory);
+            // Restauramos linterna
+            m_flashlight.setRadius(160.f);
+            m_flashlight.setLightColor(sf::Color(255, 240, 200));
+        }
+        return;
+    }
+
     if (m_state != GameState::Playing) return;
 
     updateMovement(dt);
@@ -443,7 +484,15 @@ void Game::checkEndConditions() {
     float        distSq = diff.x * diff.x + diff.y * diff.y;
     float        threshold = TILE_SIZE * 1.2f * TILE_SIZE * 1.2f;
 
-    if (distSq < threshold)        m_state = GameState::Victory;
+    if (distSq < threshold) { 
+        m_state = GameState::Winning; 
+        m_winTimer = 0.f;
+        m_audio.playSignalFound();
+        m_hud.triggerSignalFound();
+
+        for (int i = 0; i < 80; ++i)
+            m_particles.emitBurst(m_signalPos, sf::Color(90, 255, 120));
+    }
     if (m_energy.isDepleted())     m_state = GameState::GameOver;
 
     if (m_state != m_prevState) {
@@ -515,6 +564,18 @@ void Game::render() {
         overlay.setFillColor(sf::Color(0, 0, 0,
             static_cast<uint8_t>(alpha * 255.f)));
 
+        m_window.setView(m_window.getDefaultView());
+        m_window.draw(overlay);
+    }
+
+    if (m_state == GameState::Winning && m_winTimer > 2.0f) {
+        float fadeProgress = (m_winTimer - 2.0f) / (WIN_DURATION - 2.0f);
+        float alpha = std::min(fadeProgress, 1.f);
+        alpha = alpha * alpha;
+
+        sf::RectangleShape overlay(sf::Vector2f(m_window.getSize()));
+        overlay.setFillColor(sf::Color(0, 0, 0,
+            static_cast<uint8_t>(alpha * 255.f)));
         m_window.setView(m_window.getDefaultView());
         m_window.draw(overlay);
     }

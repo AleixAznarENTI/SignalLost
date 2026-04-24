@@ -222,3 +222,26 @@ void ParticleSystem::emitEnemy(sf::Vector2f origin,
 		m_particles.push_back(p);
 	}
 }
+
+void ParticleSystem::emitBurst(sf::Vector2f origin,
+	sf::Color    color,
+	int          count)
+{
+	for (int i = 0; i < count; ++i) {
+		if (static_cast<int>(m_particles.size()) >= m_maxParticles) break;
+
+		Particle p;
+		float angle = randRange(0.f, 2.f * 3.14159265f);
+		float speed = randRange(30.f, 150.f);
+
+		p.position = origin;
+		p.velocity = {
+			std::cos(angle) * speed,
+			std::sin(angle) * speed
+		};
+		p.lifetime = randRange(0.8f, 2.f);
+		p.maxLife = p.lifetime;
+		p.color = color;
+		m_particles.push_back(p);
+	}
+}

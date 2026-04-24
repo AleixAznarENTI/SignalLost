@@ -6,6 +6,7 @@ enum class GameState
 	Waking,
 	Playing,
 	Dying,
+	Winning,
 	Victory,
 	GameOver
 };

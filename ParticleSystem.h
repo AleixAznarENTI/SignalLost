@@ -29,6 +29,8 @@ public:
 
 	void emitEnemy(sf::Vector2f origin, bool isChasing, float dt);
 
+	void emitBurst(sf::Vector2f origin, sf::Color color, int count = 80);
+
 private:
 	std::vector<Particle> m_particles;
 	sf::VertexArray m_vertices;

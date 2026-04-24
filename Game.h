@@ -48,6 +48,7 @@
         std::vector<Enemy> m_enemies;
         bool m_enemyAlertPlayed = false;
         float m_wakingTimer = 0.f;
+        float m_winTimer = 0.f;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;
@@ -86,6 +87,7 @@
         static constexpr int   MAP_H = 60;
         static constexpr float TILE_SIZE = 24.f;
         static constexpr float WAKING_DURATION = 2.5f;
+        static constexpr float WIN_DURATION = 3.5f;
 };
 
 

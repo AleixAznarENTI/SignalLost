@@ -279,6 +279,9 @@ void HUD::draw(float energyPercent, GameState state) {
 		drawFeedback();
 		drawZoneNotification();
 		break;
+	case GameState::Winning:
+		// No UI while winning sequence
+		break;
 	case GameState::Victory:
 	case GameState::GameOver:
 		drawEnergyBar(energyPercent);
