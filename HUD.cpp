@@ -19,18 +19,58 @@ void HUD::onStateChanged(GameState newState) {
 		});
 
 	switch (newState) {
-	case GameState::Intro:
-		m_typewriter.start(
+	case GameState::Intro: {
+		// Pick a random intro message each run
+		const std::string intros[] = {
 			"SIGNAL LOST\n\n"
-			"The abandoned station\n"
-			"keeps an SOS signal.\n\n"
-			"Find the signal before\n"
-			"you run out of energy.\n\n"
+			"The station has been silent\n"
+			"for 72 hours.\n\n"
+			"Find the rescue signal.\n"
+			"Don't run out of power.\n\n"
 			"WASD to move\n"
-			"Use MOUSE to control your flashlight\n\n"
-			"[ PRESS SPACE TO START ]"
-		);
+			"Mouse to aim flashlight\n\n"
+			"[ PRESS SPACE TO BEGIN ]",
+
+			"SIGNAL LOST\n\n"
+			"You are the last crew member.\n"
+			"Something is still moving\n"
+			"in the dark.\n\n"
+			"Find the signal. Get out.\n\n"
+			"WASD to move\n"
+			"Mouse to aim flashlight\n\n"
+			"[ PRESS SPACE TO BEGIN ]",
+
+			"SIGNAL LOST\n\n"
+			"Power reserves critical.\n"
+			"The station reconfigures\n"
+			"itself each time.\n"
+			"You won't remember the way back.\n\n"
+			"WASD to move\n"
+			"Mouse to aim flashlight\n\n"
+			"[ PRESS SPACE TO BEGIN ]",
+
+			"SIGNAL LOST\n\n"
+			"Three expeditions.\n"
+			"None returned.\n"
+			"You volunteered anyway.\n\n"
+			"WASD to move\n"
+			"Mouse to aim flashlight\n\n"
+			"[ PRESS SPACE TO BEGIN ]",
+
+			"SIGNAL LOST\n\n"
+			"The rescue team is waiting.\n"
+			"They won't wait forever.\n\n"
+			"Find the signal before\n"
+			"your battery dies.\n\n"
+			"WASD to move\n"
+			"Mouse to aim flashlight\n\n"
+			"[ PRESS SPACE TO BEGIN ]"
+		};
+
+		int index = rand() % 5;
+		m_typewriter.start(intros[index]);
 		break;
+	}
 	case GameState::Victory:
 		m_typewriter.start(
 			"SIGNAL FOUND\n\n"
