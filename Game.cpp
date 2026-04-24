@@ -204,9 +204,14 @@ void Game::update(float dt) {
 
     if (m_state != GameState::Playing) return;
 
+    sf::Vector2i playerTile(
+        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
+        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
+    );
+
     updateMovement(dt);
-    updateRoomEffects(dt);
-    updateHazardEffects(dt);
+    updateRoomEffects(dt, playerTile);
+    updateHazardEffects(dt, playerTile);
     updateEnemies(dt);
     updateBatteries(dt);
     updatePowerUps(dt);
@@ -214,11 +219,6 @@ void Game::update(float dt) {
     checkEndConditions();
 
     m_stats.update(dt, m_player.getPosition(), TILE_SIZE);
-
-    sf::Vector2i playerTile(
-        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
-        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
-    );
     const auto& rooms = m_map.getRooms();
     for (size_t i = 0; i < rooms.size(); ++i) {
         if (rooms[i].contains(playerTile.x, playerTile.y))
@@ -253,7 +253,7 @@ void Game::updateMovement(float dt) {
 
     m_player.move(velocity, dt, m_map);
     m_energy.update(dt);
-    m_audio.update(m_energy.getPercentage());
+    m_audio.update(m_energy.getPercent());
     for (const auto& enemy : m_enemies) {
         if (!enemy.catchesPlayer(m_player.getPosition(), TILE_SIZE)) continue;
 
@@ -267,7 +267,6 @@ void Game::updateMovement(float dt) {
         m_state = GameState::Dying;
         m_slowMotionTimer = 0.f;
         m_audio.playGameOver();
-        m_hud.triggerGameOver();
 
         m_hud.triggerDeathFlash();
         m_particles.emitBurst(m_player.getPosition(),
@@ -332,11 +331,7 @@ void Game::updateEnemyProximity() {
 
 }
 
-void Game::updateRoomEffects(float dt) {
-    sf::Vector2i playerTile(
-        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
-        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
-    );
+void Game::updateRoomEffects(float dt, sf::Vector2i playerTile) {
 
     RoomType currentRoom = m_map.getRoomTypeAt(playerTile.x, playerTile.y);
 
@@ -348,7 +343,7 @@ void Game::updateRoomEffects(float dt) {
         ? 280.f
         : 160.f;
 
-    float flickerRadius = baseRadius * (0.5f + 0.5f * m_energy.getPercentage());    if (currentRoom == RoomType::Danger) {
+    float flickerRadius = baseRadius * (0.5f + 0.5f * m_energy.getPercent());    if (currentRoom == RoomType::Danger) {
         flickerRadius *= 1.f + 0.15f * std::sin(
             m_clock.getElapsedTime().asSeconds() * 15.f);
     }
@@ -374,8 +369,7 @@ void Game::updateRoomEffects(float dt) {
 void Game::updateBatteries(float dt) {
     for (auto& battery : m_batteries) {
         if (battery.isCollected()) continue;
-        if (!battery.isCollected())
-            m_particles.emitBattery(battery.getPosition(), dt);
+        m_particles.emitBattery(battery.getPosition(), dt);
 
         sf::Vector2f diff = m_player.getPosition() - battery.getPosition();
         float        distSq = diff.x * diff.x + diff.y * diff.y;
@@ -416,11 +410,8 @@ void Game::updatePowerUps(float dt) {
     m_hud.triggerZoneNotification(def.name, def.color);
 }
 
-void Game::updateHazardEffects(float dt) {
-    sf::Vector2i playerTile(
-        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
-        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
-    );
+void Game::updateHazardEffects(float dt, sf::Vector2i playerTile) {
+
 
     m_currentHazard = m_hazards.getHazardAt(playerTile.x, playerTile.y);
 
@@ -454,7 +445,7 @@ void Game::updateHazardEffects(float dt) {
         float buzz = 1.f + 0.25f * std::sin(
             m_clock.getElapsedTime().asSeconds() * 25.f);
         m_flashlight.setRadius(
-            160.f * m_energy.getPercentage() * buzz);
+            160.f * m_energy.getPercent() * buzz);
         m_player.setSpeedMultiplier(1.f);
         break;
     }
@@ -529,7 +520,6 @@ void Game::checkEndConditions() {
         }
         if (m_state == GameState::GameOver) { 
             m_audio.playGameOver(); 
-            m_hud.triggerGameOver();
         }
         m_hud.onStateChanged(m_state);
         m_prevState = m_state;
@@ -638,7 +628,7 @@ void Game::render() {
     }
 
     // --- HUD ---
-    m_hud.draw(m_energy.getPercentage(), m_state);
+    m_hud.draw(m_energy.getPercent(), m_state);
 
     // --- Post process always last ---
     m_postProcess.draw(0.4f);
@@ -694,25 +684,4 @@ void Game::reset() {
     m_prevState = GameState::Playing;
     m_hud.onStateChanged(GameState::Playing);
     m_audio.playAmbient();
-}
-
-// ----------------------------------------------------------------
-// drawEndScreen: restart text when the game is over or won, drawn on top of the default view so it doesn't move with the camera
-// ----------------------------------------------------------------
-void Game::drawEndScreen() {
-    sf::View prev = m_window.getView();
-    m_window.setView(m_window.getDefaultView());
-
-    sf::Text hint(m_font, "Press R to restart  |  Escape to quit", 16);
-    hint.setFillColor(sf::Color(180, 180, 180));
-
-    sf::FloatRect b = hint.getLocalBounds();
-    hint.setOrigin({ b.size.x / 2.f, 0.f });
-    hint.setPosition({
-        m_window.getSize().x / 2.f,
-        m_window.getSize().y / 2.f + 40.f
-        });
-
-    m_window.draw(hint);
-    m_window.setView(prev);
 }

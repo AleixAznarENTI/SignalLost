@@ -30,7 +30,6 @@ public:
 	void triggerDangerEnter();
 	void triggerControlEnter();
 	void triggerSignalFound();
-	void triggerGameOver();
 	void triggerZoneNotification(const std::string& name, sf::Color color);
 	void triggerUIFadeIn() { m_uiFadeTimer = 0.f; }
 	void triggerDeathFlash();
@@ -56,7 +55,6 @@ private:
 	float m_dangerVignetteTimer = 0.f;
 	float m_controlVignetteTimer = 0.f;
 	float m_signalFlashTimer = 0.f;
-	float m_gameOverFadeTimer = 0.f;
 
 	RoomType m_currentRoom = RoomType::Normal;
 	RoomType m_prevRoom = RoomType::Normal;

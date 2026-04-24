@@ -73,12 +73,11 @@
         // --- Helpers ---
         void initMap();
         void reset();
-        void drawEndScreen();  // "Press R" text in victory/gameover
 
         void updateMovement(float dt);
-        void updateRoomEffects(float dt);
+        void updateRoomEffects(float dt, sf::Vector2i playerTile);
         void updateBatteries(float dt);
-        void updateHazardEffects(float dt);
+        void updateHazardEffects(float dt, sf::Vector2i playerTile);
         void updateEnemies(float dt);
         void updatePowerUps(float dt);
         void updateEnemyProximity();

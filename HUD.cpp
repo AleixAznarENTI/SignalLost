@@ -105,7 +105,6 @@ void HUD::update(float dt, GameState state) {
 	tick(m_dangerVignetteTimer);
 	tick(m_controlVignetteTimer);
 	tick(m_signalFlashTimer);
-	tick(m_gameOverFadeTimer);
 	tick(m_zoneNotifTimer);
 	tick(m_deathFlashTimer);
 
@@ -386,7 +385,7 @@ void HUD::drawSignalIndicator() {
 	};
 	sf::Vertex arrow2[] = {
 	sf::Vertex(tip,	  sf::Color(80, 255, 120, a)),
-	sf::Vertex(head1, sf::Color(80, 255, 120, a))
+	sf::Vertex(head2, sf::Color(80, 255, 120, a))
 	};
 	m_window.draw(arrow1, 2, sf::PrimitiveType::Lines);
 	m_window.draw(arrow2, 2, sf::PrimitiveType::Lines);
@@ -658,10 +657,6 @@ void HUD::triggerControlEnter() {
 
 void HUD::triggerSignalFound() {
 	m_signalFlashTimer = 1.5f;
-}
-
-void HUD::triggerGameOver() {
-	m_gameOverFadeTimer = 3.f;  // fade a negro en 3 segundos
 }
 
 void HUD::triggerDeathFlash() {

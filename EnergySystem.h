@@ -12,7 +12,7 @@ public:
 	float getMaxEnergy() const { return m_maxEnergy; }
 	bool isDepleted() const { return m_energy <= 0.f; }
 
-	float getPercentage() const { return m_energy / m_maxEnergy; }
+	float getPercent() const { return m_energy / m_maxEnergy; }
 
 private:
 	float m_energy;
