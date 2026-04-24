@@ -33,6 +33,7 @@ public:
 	void triggerGameOver();
 	void triggerZoneNotification(const std::string& name, sf::Color color);
 	void triggerUIFadeIn() { m_uiFadeTimer = 0.f; }
+	void triggerDeathFlash();
 
 private:
 	sf::RenderWindow& m_window;
@@ -43,7 +44,7 @@ private:
 	const PowerUpSystem* m_powerUps = nullptr;
 	float m_wakingTimer = 0.f;
 	float m_uiFadeTimer = 0.f;
-	
+	float m_deathFlashTimer = 0.f;
 
 	// Signal state
 	float m_signalAngle = 0.f;

@@ -67,6 +67,7 @@ void HUD::update(float dt, GameState state) {
 	tick(m_signalFlashTimer);
 	tick(m_gameOverFadeTimer);
 	tick(m_zoneNotifTimer);
+	tick(m_deathFlashTimer);
 
 	if (state == GameState::Playing && m_uiFadeTimer < UI_FADE_DURATION)
 		m_uiFadeTimer += dt;
@@ -460,24 +461,22 @@ void HUD::drawFeedback() {
 		m_window.draw(flash);
 	}
 
-	// 5. Fade a negro al quedarse sin energía
-	if (m_gameOverFadeTimer > 0.f) {
-		float progress = 1.f - (m_gameOverFadeTimer / 3.f); // 0→1
-		float alpha = progress * progress; // cuadrático = más dramático
-
-		sf::RectangleShape fade(sf::Vector2f(w, h));
-		fade.setFillColor(sf::Color(0, 0, 0,
-			static_cast<uint8_t>(alpha * 255.f)));
-		m_window.draw(fade);
-	}
-
-	// Viñeta de proximidad al enemigo - rojo pulsante
+	// 6. Viñeta de proximidad al enemigo - rojo pulsante
 	if (m_enemyProximityAlpha > 0.f) {
 		float pulse = std::abs(std::sin(
 			m_clock.getElapsedTime().asSeconds() * 4.f
 		));
 		float finalAlpha = m_enemyProximityAlpha * (0.4f + 0.3f * pulse);
 		drawVignette(sf::Color(200, 20, 20), finalAlpha);
+	}
+
+	// 7. Death flash — instantáneo y muy brillante
+	if (m_deathFlashTimer > 0.f) {
+		float alpha = (m_deathFlashTimer / 0.3f);
+		sf::RectangleShape flash(sf::Vector2f(m_window.getSize()));
+		flash.setFillColor(sf::Color(255, 30, 30,
+			static_cast<uint8_t>(alpha * 230.f)));
+		m_window.draw(flash);
 	}
 }
 
@@ -623,6 +622,10 @@ void HUD::triggerSignalFound() {
 
 void HUD::triggerGameOver() {
 	m_gameOverFadeTimer = 3.f;  // fade a negro en 3 segundos
+}
+
+void HUD::triggerDeathFlash() {
+	m_deathFlashTimer = 0.3f;
 }
 
 void HUD::setCurrentRoom(RoomType room) {

@@ -49,6 +49,8 @@
         bool m_enemyAlertPlayed = false;
         float m_wakingTimer = 0.f;
         float m_winTimer = 0.f;
+        float m_slowMotionTimer = 0.f;
+        float m_gameOverFadeTimer = 0.f;
 
         // --- Game state ---
         std::vector<Battery> m_batteries;
@@ -88,6 +90,9 @@
         static constexpr float TILE_SIZE = 24.f;
         static constexpr float WAKING_DURATION = 2.5f;
         static constexpr float WIN_DURATION = 3.5f;
+        static constexpr float SLOW_DURATION = 0.8f;
+        static constexpr float SLOW_FACTOR = 0.12f;
+        static constexpr float GAMEOVER_FADE_DURATION = 1.5f;
 };
 
 

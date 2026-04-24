@@ -120,16 +120,40 @@ void Game::update(float dt) {
         return;
     }
 
+    // --- GameOver ---
+    if (m_state == GameState::GameOver) {
+        m_gameOverFadeTimer += dt;
+    }
 
     // --- Dying ---
     if (m_state == GameState::Dying) {
-        m_camera.update(
-            m_player.getPosition(),
-            sf::Vector2f(0.f,0.f),
-            dt
-        );
+        m_slowMotionTimer += dt;
 
-        if (!m_camera.isShaking()) {
+        float slowProgress = m_slowMotionTimer / SLOW_DURATION;
+        float timeFactor;
+
+        if (slowProgress < 0.5f) {
+            timeFactor = SLOW_FACTOR;
+        }
+        else {
+            float recovery = (slowProgress - 0.5f) / 0.5f;
+            timeFactor = SLOW_FACTOR + (1.f - SLOW_FACTOR) * recovery;
+        }
+
+        float slowDt = dt * timeFactor;
+
+        m_particles.update(slowDt);
+        m_camera.update(m_player.getPosition(),
+            sf::Vector2f(0.f, 0.f), slowDt);
+
+        // Shake en el punto medio
+        if (m_slowMotionTimer >= SLOW_DURATION * 0.6f &&
+            !m_camera.isShaking()) {
+            m_camera.triggerShake(0.4f, 12.f);
+        }
+
+        // ← solo el timer, sin depender del shake
+        if (m_slowMotionTimer >= SLOW_DURATION + 0.4f) {
             m_state = GameState::GameOver;
             m_prevState = GameState::GameOver;
             m_hud.onStateChanged(GameState::GameOver);
@@ -238,13 +262,16 @@ void Game::updateMovement(float dt) {
             m_camera.triggerShake(0.3f, 6.f);
             m_hud.triggerZoneNotification("SHIELD BROKEN",
                 sf::Color(100, 180, 255));
+            return;
         }
-        else {
-            m_state = GameState::Dying;
-            m_camera.triggerShake(0.6f, 12.f);
-            m_audio.playGameOver();
-            m_hud.triggerGameOver();
-        }
+        m_state = GameState::Dying;
+        m_slowMotionTimer = 0.f;
+        m_audio.playGameOver();
+        m_hud.triggerGameOver();
+
+        m_hud.triggerDeathFlash();
+        m_particles.emitBurst(m_player.getPosition(),
+                              sf::Color(255, 40, 40), 60);
         return;
     }
 }
@@ -516,7 +543,11 @@ void Game::render() {
     m_window.clear(sf::Color(10, 10, 20));
 
     // --- World rendering (everything except Intro) ---
-    if (m_state != GameState::Intro) {
+    bool worldVisible = m_state != GameState::Intro &&
+        !(m_state == GameState::GameOver &&
+            m_gameOverFadeTimer >= GAMEOVER_FADE_DURATION);
+
+    if (worldVisible) {
         m_window.setView(m_camera.getView());
 
         m_renderer.drawMap();
@@ -544,8 +575,7 @@ void Game::render() {
         );
     }
 
-    // --- HUD ---
-    m_hud.draw(m_energy.getPercentage(), m_state);
+
 
     // --- Waking overlay — fades from black as the player "wakes up" ---
     if (m_state == GameState::Waking) {
@@ -568,6 +598,33 @@ void Game::render() {
         m_window.draw(overlay);
     }
 
+    // --- Dying overlay ---
+    if (m_state == GameState::Dying) {
+        float progress = m_slowMotionTimer / SLOW_DURATION;
+
+        // Flash rojo que se desvanece
+        float alpha = (1.f - progress) * 0.5f;
+
+        sf::RectangleShape overlay(sf::Vector2f(m_window.getSize()));
+        overlay.setFillColor(sf::Color(180, 0, 0,
+            static_cast<uint8_t>(alpha * 255.f)));
+        m_window.setView(m_window.getDefaultView());
+        m_window.draw(overlay);
+    }
+
+    // --- GameOver overlay ---
+    if (m_state == GameState::GameOver) {
+        float progress = std::min(
+            m_gameOverFadeTimer / GAMEOVER_FADE_DURATION, 1.f);
+        float alpha = progress * progress;
+
+        sf::RectangleShape fade(sf::Vector2f(m_window.getSize()));
+        fade.setFillColor(sf::Color(0, 0, 0,
+            static_cast<uint8_t>(alpha * 255.f)));
+        m_window.setView(m_window.getDefaultView());
+        m_window.draw(fade);
+    }
+
     if (m_state == GameState::Winning && m_winTimer > 2.0f) {
         float fadeProgress = (m_winTimer - 2.0f) / (WIN_DURATION - 2.0f);
         float alpha = std::min(fadeProgress, 1.f);
@@ -579,6 +636,9 @@ void Game::render() {
         m_window.setView(m_window.getDefaultView());
         m_window.draw(overlay);
     }
+
+    // --- HUD ---
+    m_hud.draw(m_energy.getPercentage(), m_state);
 
     // --- Post process always last ---
     m_postProcess.draw(0.4f);
