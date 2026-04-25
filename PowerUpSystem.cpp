@@ -22,20 +22,23 @@ void PowerUpSystem::generate(const Map& map, float tileSize) {
     for (const auto& room : map.getRooms()) {
         if (room.type != RoomType::Storage) continue;
 
-        // 1-2 power-ups por sala Storage
         int count = 1 + rand() % 2;
 
         for (int i = 0; i < count; ++i) {
-            int tx = room.x + 1 + rand() % (room.w - 2);
-            int ty = room.y + 1 + rand() % (room.h - 2);
+            for (int attempt = 0; attempt < 30; ++attempt) {
+                int tx = room.x + 1 + rand() % (room.w - 2);
+                int ty = room.y + 1 + rand() % (room.h - 2);
 
-            PowerUpType type = allTypes[rand() % 5];
+                // ← solo Floor puro
+                if (map.getTile(tx, ty) != TileType::Floor) continue;
 
-            m_pickups.emplace_back(
-                sf::Vector2f((tx + 0.5f) * tileSize,
-                    (ty + 0.5f) * tileSize),
-                type
-            );
+                sf::Vector2f worldPos(
+                    (tx + 0.5f) * tileSize,
+                    (ty + 0.5f) * tileSize
+                );
+                m_pickups.emplace_back(worldPos, allTypes[rand() % 5]);
+                break;
+            }
         }
     }
 }

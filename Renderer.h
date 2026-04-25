@@ -38,5 +38,10 @@ private:
 	sf::RectangleShape m_batteryShape;
 
 	sf::Vector2f toPixels(int x, int y) const;
+	void drawProp(const Map& map, int x, int y,
+		sf::Color fill, sf::Color outline,
+		float sizeRatio);
+	void drawPropLight(int x, int y, sf::Color color);
+	void drawDebris(int x, int y);
 };
 

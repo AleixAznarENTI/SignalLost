@@ -6,7 +6,14 @@
 
 enum class TileType {
 	Wall,
-	Floor
+	Floor,
+
+	// --- Props ---
+	PropCrate,
+	PropConsole,
+	PropColumn,
+	PropBarrel,
+	PropDebris
 };
 
 class Map
@@ -26,6 +33,7 @@ public:
 	const std::vector<Room>&    getRooms()	   const { return m_rooms; }
 
 	RoomType getRoomTypeAt(int tx, int ty) const;
+	bool isSolid(int x, int y) const;
 
 private:
 	int m_width;
@@ -45,4 +53,6 @@ private:
 	void assignRoomTypes();
 	void placeBatteries(float tileSize);
 	void placeSignal();
+	void placeProps(float tileSize);
+	void applyRoomShapes();
 };

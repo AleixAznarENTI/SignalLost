@@ -19,7 +19,7 @@
 #include "PowerUpSystem.h"
 #include "PauseMenu.h"
 
-    class Game {
+class Game {
     public:
         Game();
 
@@ -104,7 +104,3 @@
         static constexpr float SLOW_FACTOR = 0.12f;
         static constexpr float GAMEOVER_FADE_DURATION = 1.5f;
 };
-
-
-
-

@@ -11,7 +11,7 @@ Player::Player(sf::Vector2f startPosition, float tileSize)
 bool Player::collidesWithWall(sf::Vector2f point, const Map& map) const {
 	int tileX = static_cast<int>(point.x / m_tileSize);
 	int tileY = static_cast<int>(point.y / m_tileSize);
-	return map.getTile(tileX, tileY) == TileType::Wall;
+	return map.isSolid(tileX, tileY);
 }
 
 void Player::move(sf::Vector2f velocity, float dt, const Map& map) {

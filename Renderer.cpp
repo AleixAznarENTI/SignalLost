@@ -39,12 +39,22 @@ void Renderer::bakeMap(const Map& map) {
 	for (int y = 0; y < map.getHeight(); ++y) {
 		for (int x = 0; x < map.getWidth(); ++x) {
 			TileType tile = map.getTile(x, y);
+			RoomType rtype = map.getRoomTypeAt(x, y);
 
-			if (tile == TileType::Wall) {
+			switch (tile) {
+			case TileType::Wall:
+				m_tileShape.setSize(sf::Vector2f(m_tileSize - 1.f,
+					m_tileSize - 1.f));
 				m_tileShape.setFillColor(sf::Color(30, 30, 50));
-			}
-			else {
-				RoomType rtype = map.getRoomTypeAt(x, y);
+				m_tileShape.setOutlineThickness(0.f);
+				m_tileShape.setPosition(toPixels(x, y));
+				m_mapTexture.draw(m_tileShape);
+				break;
+
+			case TileType::Floor:
+				m_tileShape.setSize(sf::Vector2f(m_tileSize - 1.f,
+					m_tileSize - 1.f));
+				m_tileShape.setOutlineThickness(0.f);
 				switch (rtype) {
 				case RoomType::Storage:
 					m_tileShape.setFillColor(sf::Color(50, 80, 60));
@@ -56,13 +66,49 @@ void Renderer::bakeMap(const Map& map) {
 					m_tileShape.setFillColor(sf::Color(40, 60, 90));
 					break;
 				default:
-					m_tileShape.setFillColor(sf::Color(70,70,100));
+					m_tileShape.setFillColor(sf::Color(70, 70, 100));
 					break;
 				}
-			}
+				m_tileShape.setPosition(toPixels(x, y));
+				m_mapTexture.draw(m_tileShape);
+				break;
 
-			m_tileShape.setPosition(toPixels(x, y));
-			m_mapTexture.draw(m_tileShape);
+			case TileType::PropCrate:
+				drawProp(map, x, y,
+					sf::Color(100, 80, 50),    // marrón metálico
+					sf::Color(140, 110, 70),   // borde más claro
+					0.75f);                    // tamaño relativo
+				break;
+
+			case TileType::PropConsole:
+				drawProp(map, x, y,
+					sf::Color(30, 60, 90),     // azul oscuro
+					sf::Color(50, 150, 200),   // borde cyan
+					0.8f);
+				// Punto de luz de la consola
+				drawPropLight(x, y, sf::Color(0, 200, 255, 180));
+				break;
+
+			case TileType::PropColumn:
+				drawProp(map, x, y,
+					sf::Color(50, 50, 70),     // gris azulado
+					sf::Color(80, 80, 110),    // borde más claro
+					0.7f);
+				break;
+
+			case TileType::PropBarrel:
+				drawProp(map, x, y,
+					sf::Color(80, 50, 30),     // marrón oxidado
+					sf::Color(180, 80, 20),    // borde naranja
+					0.65f);
+				// Advertencia en barriles de peligro
+				drawPropLight(x, y, sf::Color(220, 80, 0, 150));
+				break;
+
+			case TileType::PropDebris:
+				drawDebris(x, y);
+				break;
+			}
 		}
 	}
 
@@ -230,4 +276,69 @@ void Renderer::drawEnemies(const std::vector<Enemy>& enemies) {
 		body.setOutlineThickness(1.5f);
 		m_window.draw(body);
 	}
+}
+
+void Renderer::drawProp(const Map& map, int x, int y,
+	sf::Color fill, sf::Color outline,
+	float sizeRatio)
+{
+	// Primero dibujamos el suelo debajo del prop
+	RoomType rtype = map.getRoomTypeAt(x, y);
+	m_tileShape.setSize(sf::Vector2f(m_tileSize - 1.f, m_tileSize - 1.f));
+	m_tileShape.setOutlineThickness(0.f);
+	switch (rtype) {
+	case RoomType::Storage: m_tileShape.setFillColor(sf::Color(50, 80, 60));  break;
+	case RoomType::Danger:  m_tileShape.setFillColor(sf::Color(80, 40, 40));  break;
+	case RoomType::Control: m_tileShape.setFillColor(sf::Color(40, 60, 90));  break;
+	default:                m_tileShape.setFillColor(sf::Color(70, 70, 100)); break;
+	}
+	m_tileShape.setPosition(toPixels(x, y));
+	m_mapTexture.draw(m_tileShape);
+
+	// Luego el prop encima
+	float size = m_tileSize * sizeRatio;
+	float offset = (m_tileSize - size) / 2.f;
+
+	sf::RectangleShape prop({ size, size });
+	prop.setFillColor(fill);
+	prop.setOutlineColor(outline);
+	prop.setOutlineThickness(1.5f);
+	prop.setPosition(toPixels(x, y) + sf::Vector2f(offset, offset));
+	m_mapTexture.draw(prop);
+}
+
+void Renderer::drawPropLight(int x, int y, sf::Color color) {
+	// Pequeño punto de luz en la esquina del prop
+	float dotSize = m_tileSize * 0.12f;
+	sf::CircleShape dot(dotSize);
+	dot.setFillColor(color);
+	dot.setPosition(toPixels(x, y) +
+		sf::Vector2f(m_tileSize * 0.75f, m_tileSize * 0.15f));
+	m_mapTexture.draw(dot);
+}
+
+void Renderer::drawDebris(int x, int y) {
+	// Escombros: 3-4 rectángulos pequeños en posiciones aleatorias
+	// Usamos x,y como semilla para que sean consistentes
+	srand(x * 1000 + y); // semilla determinista
+
+	for (int i = 0; i < 3; ++i) {
+		float w = m_tileSize * (0.15f + (rand() % 20) * 0.01f);
+		float h = m_tileSize * (0.1f + (rand() % 15) * 0.01f);
+		float px = (rand() % static_cast<int>(m_tileSize * 0.7f));
+		float py = (rand() % static_cast<int>(m_tileSize * 0.7f));
+
+		sf::RectangleShape piece({ w, h });
+		piece.setFillColor(sf::Color(
+			60 + rand() % 30,
+			55 + rand() % 25,
+			70 + rand() % 20
+		));
+		piece.setRotation(sf::degrees(static_cast<float>(rand() % 360)));
+		piece.setPosition(toPixels(x, y) + sf::Vector2f(px, py));
+		m_mapTexture.draw(piece);
+	}
+
+	// Restauramos la semilla aleatoria del juego
+	srand(static_cast<unsigned>(time(nullptr)));
 }
