@@ -36,8 +36,8 @@ private:
 
 	static constexpr float DETECTION_RANGE = 200.f;
 	static constexpr float CHASE_RANGE = 280.f;
-	static constexpr float BASE_SPEED = 90.f;
-	static constexpr float DANGER_SPEED = 160.f;
+	static constexpr float BASE_SPEED = 60.f;
+	static constexpr float DANGER_SPEED = 110.f;
 
 	void updatePatrol(float dt, const Map& map);
 	void updateChase(float dt, sf::Vector2f playerPos, const Map& map);

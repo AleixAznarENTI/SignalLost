@@ -19,7 +19,8 @@ public:
 
 	void drawPlayer(sf::Vector2f position);
 	void drawSignal(sf::Vector2f position);
-	void drawBatteries(const std::vector<Battery>& batteries);
+	void drawBatteries(const std::vector<Battery>& batteries,
+						sf::Vector2f playerPos);
 	void drawEnemies(const std::vector<Enemy>& enemies);
 	void drawPowerUps(const std::vector<PowerUp>& powerUps);
 

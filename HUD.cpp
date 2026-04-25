@@ -107,6 +107,7 @@ void HUD::update(float dt, GameState state) {
 	tick(m_signalFlashTimer);
 	tick(m_zoneNotifTimer);
 	tick(m_deathFlashTimer);
+	tick(m_signalHintTimer);
 
 	if (state == GameState::Playing && m_uiFadeTimer < UI_FADE_DURATION)
 		m_uiFadeTimer += dt;
@@ -212,54 +213,70 @@ void HUD::drawScoreScreen(GameState state) {
 	m_window.draw(hint);
 }
 
-void HUD::drawEnergyBar(float energyPercentage) {
+void HUD::drawEnergyBar(float percent) {
 	uint8_t a = getUIAlpha();
-	const float barWidth  = 200.f;
-	const float barHeight = 14.f;
-	const float margin    = 16.f;
-	float screenH		  = static_cast<float>(m_window.getSize().y);
+	float   screenH = static_cast<float>(m_window.getSize().y);
+	float   barW = 200.f;
+	float   barH = 14.f;
+	float   margin = 16.f;
 
-	// Background
-	sf::RectangleShape bg({ barWidth, barHeight });
+	// Pulso cuando la energía es baja — llama la atención
+	float scaleY = 1.f;
+	if (percent < 0.25f) {
+		float urgency = 1.f - (percent / 0.25f); // 0→1
+		float pulse = std::abs(std::sin(
+			m_clock.getElapsedTime().asSeconds() * (4.f + urgency * 4.f)));
+		scaleY = 1.f + urgency * 0.4f * pulse; // escala hasta 40% más alta
+	}
+
+	float scaledH = barH * scaleY;
+	float barY = screenH - margin - scaledH;
+
+	// Fondo
+	sf::RectangleShape bg({ barW, scaledH });
 	bg.setFillColor(sf::Color(40, 40, 40, a));
-	bg.setPosition({ margin, screenH - margin - barHeight });
+	bg.setPosition({ margin, barY });
 	m_window.draw(bg);
 
-	// Filler
+	// Relleno
 	sf::Color fillColor;
-	if (energyPercentage > .5f) fillColor = sf::Color(80, 220, 120, a);
-	else if (energyPercentage > .25f) fillColor = sf::Color(240, 200, 50, a);
-	else fillColor = sf::Color(220, 60, 60, a);
+	if (percent > 0.5f)  fillColor = sf::Color(80, 220, 120, a);
+	else if (percent > 0.25f) fillColor = sf::Color(240, 200, 50, a);
+	else {
+		// Rojo que pulsa más intensamente
+		float pulse = std::abs(std::sin(
+			m_clock.getElapsedTime().asSeconds() * 6.f));
+		uint8_t red = static_cast<uint8_t>(180 + 75 * pulse);
+		fillColor = sf::Color(red, 30, 30, a);
+	}
 
-	sf::RectangleShape fill({ barWidth * energyPercentage, barHeight });
+	sf::RectangleShape fill({ barW * percent, scaledH });
 	fill.setFillColor(fillColor);
-	fill.setPosition(bg.getPosition());
+	fill.setPosition({ margin, barY });
 	m_window.draw(fill);
 
-	// Border
-	sf::RectangleShape border({ barWidth, barHeight });
-	border.setFillColor(sf::Color::Transparent);
-	border.setOutlineColor(sf::Color(150, 150, 150, a));
-	border.setOutlineThickness(1.f);
-	border.setPosition(bg.getPosition());
-	m_window.draw(border);
-
-	// Flash verde encima de la barra al recoger batería
+	// Flash verde al recoger batería
 	if (m_batteryFlashTimer > 0.f) {
-		float alpha = m_batteryFlashTimer / 0.4f;  // 1→0
-		sf::RectangleShape flash({ barWidth, barHeight });
-		flash.setPosition(bg.getPosition());
-		flash.setFillColor(sf::Color(
-			100, 255, 100,
-			static_cast<uint8_t>(alpha * 200.f)
-		));
+		float flashAlpha = m_batteryFlashTimer / 0.4f;
+		sf::RectangleShape flash({ barW, scaledH });
+		flash.setPosition({ margin, barY });
+		flash.setFillColor(sf::Color(100, 255, 100,
+			static_cast<uint8_t>(flashAlpha * 200.f)));
 		m_window.draw(flash);
 	}
 
-	// Etiqueta
+	// Borde
+	sf::RectangleShape border({ barW, scaledH });
+	border.setFillColor(sf::Color::Transparent);
+	border.setOutlineColor(sf::Color(150, 150, 150, a));
+	border.setOutlineThickness(1.f);
+	border.setPosition({ margin, barY });
+	m_window.draw(border);
+
+	// Label
 	sf::Text label(m_font, "ENERGY", 11);
 	label.setFillColor(sf::Color(180, 180, 180, a));
-	label.setPosition({ margin, screenH - margin - barHeight - 16.f });
+	label.setPosition({ margin, barY - 16.f });
 	m_window.draw(label);
 }
 
@@ -316,6 +333,7 @@ void HUD::draw(float energyPercent, GameState state) {
 		drawEnergyBar(energyPercent);
 		drawSignalIndicator();
 		drawActivePowerUps();
+		drawSignalHint();
 		drawFeedback();
 		drawZoneNotification();
 		break;
@@ -689,4 +707,85 @@ uint8_t HUD::getUIAlpha() const {
 	float progress = std::min(m_uiFadeTimer / UI_FADE_DURATION, 1.f);
 	progress = progress * progress;
 	return static_cast<uint8_t>(progress * 255.f);
+}
+
+void HUD::triggerSignalHint(sf::Vector2f playerPos,
+	sf::Vector2f signalPos)
+{
+	sf::Vector2f diff = signalPos - playerPos;
+	m_signalHintAngle = std::atan2(diff.y, diff.x);
+	m_signalHintTimer = SIGNAL_HINT_DURATION;
+}
+
+void HUD::drawSignalHint() {
+	if (m_signalHintTimer <= 0.f) return;
+
+	float w = static_cast<float>(m_window.getSize().x);
+	float h = static_cast<float>(m_window.getSize().y);
+
+	// Alpha: fade in rápido, fade out al final
+	float progress = 1.f - (m_signalHintTimer / SIGNAL_HINT_DURATION);
+	float alpha;
+	if (progress < 0.15f)
+		alpha = progress / 0.15f;
+	else if (progress < 0.7f)
+		alpha = 1.f;
+	else
+		alpha = 1.f - (progress - 0.7f) / 0.3f;
+
+	alpha = std::max(0.f, std::min(1.f, alpha));
+
+	// Flecha grande centrada que pulsa
+	float pulse = 1.f + 0.1f * std::sin(
+		m_clock.getElapsedTime().asSeconds() * 6.f);
+	float arrowLen = 60.f * pulse;
+	float cx = w / 2.f;
+	float cy = h / 2.f;
+
+	sf::Vector2f tip(
+		cx + arrowLen * std::cos(m_signalHintAngle),
+		cy + arrowLen * std::sin(m_signalHintAngle)
+	);
+
+	auto a = static_cast<uint8_t>(alpha * 255.f);
+	sf::Color color(80, 255, 120, a);
+
+	// Línea principal
+	sf::Vertex line[] = {
+		sf::Vertex(sf::Vector2f(cx, cy), color),
+		sf::Vertex(tip, color)
+	};
+	m_window.draw(line, 2, sf::PrimitiveType::Lines);
+
+	// Punta de flecha
+	float headLen = 15.f;
+	float headAngle = 0.4f;
+
+	sf::Vector2f h1(
+		tip.x - headLen * std::cos(m_signalHintAngle - headAngle),
+		tip.y - headLen * std::sin(m_signalHintAngle - headAngle)
+	);
+	sf::Vector2f h2(
+		tip.x - headLen * std::cos(m_signalHintAngle + headAngle),
+		tip.y - headLen * std::sin(m_signalHintAngle + headAngle)
+	);
+
+	sf::Vertex arr1[] = { sf::Vertex(tip, color), sf::Vertex(h1, color) };
+	sf::Vertex arr2[] = { sf::Vertex(tip, color), sf::Vertex(h2, color) };
+	m_window.draw(arr1, 2, sf::PrimitiveType::Lines);
+	m_window.draw(arr2, 2, sf::PrimitiveType::Lines);
+
+	// Texto pequeño debajo — única concesión al texto, muy breve
+	if (progress > 0.2f && progress < 0.8f) {
+		sf::Text label(m_font, "FIND THE SIGNAL", 13);
+		label.setFillColor(sf::Color(80, 255, 120,
+			static_cast<uint8_t>(alpha * 180.f)));
+		sf::FloatRect b = label.getLocalBounds();
+		label.setOrigin({
+			b.position.x + b.size.x / 2.f,
+			b.position.y + b.size.y / 2.f
+			});
+		label.setPosition({ cx, cy + 80.f });
+		m_window.draw(label);
+	}
 }

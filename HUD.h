@@ -32,6 +32,7 @@ public:
 	void triggerZoneNotification(const std::string& name, sf::Color color);
 	void triggerUIFadeIn() { m_uiFadeTimer = 0.f; }
 	void triggerDeathFlash();
+	void triggerSignalHint(sf::Vector2f playerPos, sf::Vector2f signalPos);
 
 private:
 	sf::RenderWindow& m_window;
@@ -47,6 +48,7 @@ private:
 	// Signal state
 	float m_signalAngle = 0.f;
 	float m_signalDistance = 0.f;
+	float m_signalHintAngle = 0.f;
 	bool m_showIndicator = false;
 
 	// --- Feedback timers ---
@@ -54,6 +56,7 @@ private:
 	float m_dangerVignetteTimer = 0.f;
 	float m_controlVignetteTimer = 0.f;
 	float m_signalFlashTimer = 0.f;
+	float m_signalHintTimer = 0.f;
 
 	RoomType m_currentRoom = RoomType::Normal;
 	RoomType m_prevRoom = RoomType::Normal;
@@ -81,8 +84,10 @@ private:
 	void drawZoneNotification();
 	void drawScoreScreen(GameState state);
 	void drawActivePowerUps();
+	void drawSignalHint();
 
 
 
 	static constexpr float UI_FADE_DURATION = 1.2f;
+	static constexpr float SIGNAL_HINT_DURATION = 3.f;
 };

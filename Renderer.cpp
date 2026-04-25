@@ -135,7 +135,9 @@ void Renderer::drawSignal(sf::Vector2f position) {
 	m_window.draw(m_signalShape);
 }
 
-void Renderer::drawBatteries(const std::vector<Battery>& batteries) {
+void Renderer::drawBatteries(const std::vector<Battery>& batteries,
+	sf::Vector2f                playerPos)
+{
 	float time = m_clock.getElapsedTime().asSeconds();
 	float pulse = std::abs(std::sin(time * 2.f));
 	float fastP = std::abs(std::sin(time * 6.f));
@@ -145,44 +147,50 @@ void Renderer::drawBatteries(const std::vector<Battery>& batteries) {
 
 		sf::Vector2f pos = battery.getPosition();
 
-		// --- Exterior Halo ---
+		// Atracción hacia el jugador si está cerca
+		sf::Vector2f diff = playerPos - pos;
+		float        distSq = diff.x * diff.x + diff.y * diff.y;
+		float        attractRange = m_tileSize * 3.f;
+
+		if (distSq < attractRange * attractRange && distSq > 0.f) {
+			float dist = std::sqrt(distSq);
+			float strength = 1.f - (dist / attractRange); // 0→1
+			float bounce = std::sin(time * 10.f) * 3.f * strength;
+			// Desplazamos la posición de dibujo levemente hacia el jugador
+			sf::Vector2f dir = diff / dist;
+			pos += dir * bounce;
+		}
+
+		// --- Halos y cuerpo igual que antes ---
 		float haloRadius = m_tileSize * (1.8f + 0.4f * pulse);
 		sf::CircleShape halo(haloRadius);
 		halo.setOrigin({ haloRadius, haloRadius });
 		halo.setPosition(pos);
-		halo.setFillColor(sf::Color(
-			180, 220, 50,
-			static_cast<uint8_t>(30 + 25 * pulse)
-		));
+		halo.setFillColor(sf::Color(180, 220, 50,
+			static_cast<uint8_t>(30 + 25 * pulse)));
 		m_window.draw(halo);
 
-		// --- Middle Halo ---
 		float midRadius = m_tileSize * (0.9f + 0.2f * pulse);
 		sf::CircleShape mid(midRadius);
 		mid.setOrigin({ midRadius, midRadius });
 		mid.setPosition(pos);
-		mid.setFillColor(sf::Color(
-			200, 240, 80,
-			static_cast<uint8_t>(60 + 40 * pulse)
-		));
+		mid.setFillColor(sf::Color(200, 240, 80,
+			static_cast<uint8_t>(60 + 40 * pulse)));
 		m_window.draw(mid);
 
-		// --- Core ---
 		float bodyW = m_tileSize * 0.4f;
 		float bodyH = m_tileSize * 0.55f;
-
 		m_batteryShape.setSize({ bodyW, bodyH });
 		m_batteryShape.setOrigin({ bodyW / 2.f, bodyH / 2.f });
 
-		uint8_t r = static_cast<uint8_t>(200 + 55 * pulse);
-		uint8_t g = static_cast<uint8_t>(180 + 40 * pulse);
+		uint8_t r = static_cast<uint8_t>(210 + 45 * fastP);
+		uint8_t g = static_cast<uint8_t>(230 + 25 * fastP);
 		m_batteryShape.setFillColor(sf::Color(r, g, 30));
 		m_batteryShape.setOutlineColor(sf::Color(255, 255, 120, 200));
 		m_batteryShape.setOutlineThickness(1.5f);
 		m_batteryShape.setPosition(pos);
 		m_window.draw(m_batteryShape);
 
-		// --- Positive pole ---
 		float poleW = bodyW * 0.35f;
 		float poleH = m_tileSize * 0.08f;
 		sf::RectangleShape pole({ poleW, poleH });

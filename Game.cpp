@@ -169,6 +169,8 @@ void Game::update(float dt) {
             m_state = GameState::Playing;
             m_flashlight.setRadius(160.f); // radio normal
             m_hud.triggerUIFadeIn();
+            m_hud.triggerSignalHint(
+                m_player.getPosition(), m_signalPos);
         }
         return;
     }
@@ -594,7 +596,7 @@ void Game::render() {
         m_window.setView(m_camera.getView());
 
         m_renderer.drawMap();
-        m_renderer.drawBatteries(m_batteries);
+        m_renderer.drawBatteries(m_batteries, m_player.getPosition());
         m_renderer.drawPowerUps(m_powerUps.getPickups());
         m_renderer.drawSignal(m_signalPos);
         m_renderer.drawEnemies(m_enemies);
@@ -723,7 +725,7 @@ void Game::spawnEnemies() {
 
         if (center == startRoom || center == signalRoom) continue;
 
-        if (rand() % 10 < 3) {
+        if (rand() % 10 < 2) {
             sf::Vector2f worldPos(
                 (center.x + 0.5f) * TILE_SIZE,
                 (center.y + 0.5f) * TILE_SIZE
