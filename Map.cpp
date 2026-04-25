@@ -46,62 +46,65 @@ void Map::carveRoom(const Room& room) {
 
 void Map::carveCorridor(sf::Vector2i a, sf::Vector2i b) {
 	int width = 1 + rand() % 2;
+	bool horizontalFirst = (rand() % 2 == 0);
 
 	int x = a.x;
 	int y = a.y;
 
-	// Punto de giro — donde el corredor cambia de horizontal a vertical
-	// Aleatorizamos si gira antes o después para más variedad
-	bool horizontalFirst = (rand() % 2 == 0);
+	// Punto de giro con desviación aleatoria
+	// En vez de girar exactamente en b.x o b.y, giramos un poco antes o después
+	int jitterX = (rand() % 5) - 2; // -2 a +2 tiles de desviación
+	int jitterY = (rand() % 5) - 2;
+
+	int pivotX = b.x + jitterX;
+	int pivotY = b.y + jitterY;
+
+	// Clampeamos para no salir del mapa
+	pivotX = std::max(1, std::min(m_width - 2, pivotX));
+	pivotY = std::max(1, std::min(m_height - 2, pivotY));
+
+	auto carveH = [&](int fromX, int toX, int atY) {
+		int step = (toX > fromX) ? 1 : -1;
+		for (int cx = fromX; cx != toX; cx += step)
+			for (int w = 0; w < width; ++w)
+				if (atY + w < m_height - 1)
+					m_grid[atY + w][cx] = TileType::Floor;
+		};
+
+	auto carveV = [&](int fromY, int toY, int atX) {
+		int step = (toY > fromY) ? 1 : -1;
+		for (int cy = fromY; cy != toY; cy += step)
+			for (int w = 0; w < width; ++w)
+				if (atX + w < m_width - 1)
+					m_grid[cy][atX + w] = TileType::Floor;
+		};
 
 	if (horizontalFirst) {
-		// Horizontal primero
-		while (x != b.x) {
-			for (int w = 0; w < width; ++w)
-				if (y + w < m_height - 1)
-					m_grid[y + w][x] = TileType::Floor;
-			x += (b.x > x) ? 1 : -1;
-		}
+		carveH(x, pivotX, y);
 		// Ensanchamiento en el giro
 		for (int w = -1; w <= width; ++w)
 			if (y + w > 0 && y + w < m_height - 1)
-				m_grid[y + w][x] = TileType::Floor;
-
-		// Vertical después
-		while (y != b.y) {
-			for (int w = 0; w < width; ++w)
-				if (x + w < m_width - 1)
-					m_grid[y][x + w] = TileType::Floor;
-			y += (b.y > y) ? 1 : -1;
-		}
+				m_grid[y + w][pivotX] = TileType::Floor;
+		carveV(y, pivotY, pivotX);
+		// Segundo tramo hasta b
+		carveH(pivotX, b.x, pivotY);
+		carveV(pivotY, b.y, b.x);
 	}
 	else {
-		// Vertical primero
-		while (y != b.y) {
-			for (int w = 0; w < width; ++w)
-				if (x + w < m_width - 1)
-					m_grid[y][x + w] = TileType::Floor;
-			y += (b.y > y) ? 1 : -1;
-		}
-		// Ensanchamiento en el giro
+		carveV(y, pivotY, x);
 		for (int w = -1; w <= width; ++w)
 			if (x + w > 0 && x + w < m_width - 1)
-				m_grid[y][x + w] = TileType::Floor;
-
-		// Horizontal después
-		while (x != b.x) {
-			for (int w = 0; w < width; ++w)
-				if (y + w < m_height - 1)
-					m_grid[y + w][x] = TileType::Floor;
-			x += (b.x > x) ? 1 : -1;
-		}
+				m_grid[pivotY][x + w] = TileType::Floor;
+		carveH(x, pivotX, pivotY);
+		carveV(pivotY, b.y, pivotX);
+		carveH(pivotX, b.x, b.y);
 	}
 
-	// Celda final ensanchada
+	// Celda final
 	for (int w = 0; w < width; ++w)
 		for (int h = 0; h < width; ++h)
-			if (x + w < m_width - 1 && y + h < m_height - 1)
-				m_grid[y + h][x + w] = TileType::Floor;
+			if (b.x + w < m_width - 1 && b.y + h < m_height - 1)
+				m_grid[b.y + h][b.x + w] = TileType::Floor;
 }
 
 void Map::generate(int roomAttempts) {
@@ -138,6 +141,8 @@ void Map::generate(int roomAttempts) {
 	for (size_t i = 1; i < m_rooms.size(); ++i)
 		carveCorridor(m_rooms[i - 1].center(), m_rooms[i].center());
 
+	placeSecondaryRooms();
+	connectSecondaryRooms();
 	carveExtraCorridors();
 	assignRoomTypes();
 	m_startPosition = m_rooms.empty()
@@ -400,5 +405,88 @@ void Map::carveExtraCorridors() {
 
 		carveCorridor(a.center(), b.center());
 		++placed;
+	}
+}
+
+void Map::placeSecondaryRooms() {
+	if (m_rooms.empty()) return;
+	size_t primaryCount = m_rooms.size();
+
+	auto randInt = [](int min, int max) {
+		return min + rand() % (max - min + 1);
+		};
+
+	// Intentamos colocar una sala secundaria en cada corredor
+	// entre salas principales adyacentes
+	int secondaryCount = 0;
+	const int MAX_SECONDARY = static_cast<int>(m_rooms.size() * 0.6f);
+
+	for (size_t i = 0; i + 1 < m_rooms.size() &&
+		secondaryCount < MAX_SECONDARY; ++i) {
+
+		sf::Vector2i a = m_rooms[i].center();
+		sf::Vector2i b = m_rooms[i + 1].center();
+
+		// Punto medio entre las dos salas
+		int midX = (a.x + b.x) / 2;
+		int midY = (a.y + b.y) / 2;
+
+		// Sala secundaria pequeña centrada en el punto medio
+		Room secondary;
+		secondary.w = randInt(3, 6);
+		secondary.h = randInt(3, 5);
+		secondary.x = midX - secondary.w / 2;
+		secondary.y = midY - secondary.h / 2;
+
+		// Verificar límites
+		if (secondary.x < 1 || secondary.y < 1 ||
+			secondary.x + secondary.w >= m_width - 1 ||
+			secondary.y + secondary.h >= m_height - 1)
+			continue;
+
+		// Verificar que no solapa con salas existentes
+		bool valid = true;
+		for (const auto& existing : m_rooms) {
+			if (secondary.overlaps(existing)) {
+				valid = false;
+				break;
+			}
+		}
+
+		if (!valid) continue;
+
+		// Asignar tipo — las secundarias son mayormente normales
+		// pero ocasionalmente Storage o Danger
+		int roll = rand() % 10;
+		if (roll < 2) secondary.type = RoomType::Storage;
+		else if (roll < 4) secondary.type = RoomType::Danger;
+		else               secondary.type = RoomType::Normal;
+
+		carveRoom(secondary);
+		m_rooms.push_back(secondary);
+		++secondaryCount;
+	}
+}
+
+void Map::connectSecondaryRooms() {
+	// Las salas secundarias (las últimas añadidas) se conectan
+	// a la sala principal más cercana
+	size_t primaryCount = m_rooms.size();
+
+	for (size_t i = primaryCount; i < m_rooms.size(); ++i) {
+		const Room& secondary = m_rooms[i];
+		float       minDist = std::numeric_limits<float>::max();
+		size_t      closest = 0;
+
+		// Buscar la sala principal más cercana
+		for (size_t j = 0; j < primaryCount; ++j) {
+			float dist = roomDistance(secondary, m_rooms[j]);
+			if (dist < minDist) {
+				minDist = dist;
+				closest = j;
+			}
+		}
+
+		carveCorridor(secondary.center(), m_rooms[closest].center());
 	}
 }

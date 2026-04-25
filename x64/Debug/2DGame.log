@@ -7,7 +7,7 @@ C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(95,27): warning
   HUD.cpp
   HazardZoneSystem.cpp
   Map.cpp
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp(172,14): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp(177,14): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
   Minimap.cpp
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Minimap.cpp(170,37): warning C4305: '-=': truncamiento de 'double' a 'float'
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Minimap.cpp(171,38): warning C4305: '+=': truncamiento de 'double' a 'float'
