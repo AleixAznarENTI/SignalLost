@@ -26,10 +26,11 @@ struct Room {
 	sf::Vector2i center() const { return { x + w / 2, y + h / 2 }; }
 
 	bool overlaps(const Room& other) const {
-		return x - 1 < other.x + other.w &&
-			x + w + 1 > other.x &&
-			y - 1 < other.y + other.h &&
-			y + h + 1 > other.y;
+		// Margen de 4 tiles entre salas — antes era 1
+		return x - 4 < other.x + other.w &&
+			x + w + 4 > other.x &&
+			y - 4 < other.y + other.h &&
+			y + h + 4 > other.y;
 	}
 
 	bool contains(int tx, int ty) const {

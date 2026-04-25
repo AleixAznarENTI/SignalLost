@@ -699,7 +699,7 @@ void Game::render() {
 // initMap: Generates map without interfering with main start
 // ----------------------------------------------------------------
 void Game::initMap() {
-    m_map.generate(3000);
+    m_map.generate(20);
     m_hazards.generate(m_map, 5); // 5 hazard zones
     m_renderer.bakeMap(m_map);
     m_minimap.bake(m_map);

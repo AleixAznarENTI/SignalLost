@@ -109,14 +109,15 @@ void Map::generate(int roomAttempts) {
 
 	auto randInt = [](int min, int max) {
 		return min + rand() % (max - min + 1);
-	};
+		};
 
 	for (int i = 0; i < roomAttempts; ++i) {
 		Room candidate;
+		// Salas más grandes — sensación de módulos espaciales
 		candidate.w = randInt(8, 16);
-		candidate.h = randInt(4, 9);
-		candidate.x = randInt(1, m_width - candidate.w - 1);
-		candidate.y = randInt(1, m_height - candidate.h - 1);
+		candidate.h = randInt(6, 12);
+		candidate.x = randInt(2, m_width - candidate.w - 2);
+		candidate.y = randInt(2, m_height - candidate.h - 2);
 
 		bool valid = true;
 		for (const auto& existing : m_rooms) {
@@ -134,11 +135,10 @@ void Map::generate(int roomAttempts) {
 
 	applyRoomShapes();
 
-	for (size_t i = 1; i < m_rooms.size(); ++i) {
+	for (size_t i = 1; i < m_rooms.size(); ++i)
 		carveCorridor(m_rooms[i - 1].center(), m_rooms[i].center());
-	}
-	carveExtraCorridors();
 
+	carveExtraCorridors();
 	assignRoomTypes();
 	m_startPosition = m_rooms.empty()
 		? sf::Vector2i(m_width / 2, m_height / 2)
