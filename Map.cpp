@@ -45,31 +45,59 @@ void Map::carveRoom(const Room& room) {
 }
 
 void Map::carveCorridor(sf::Vector2i a, sf::Vector2i b) {
-	// Anchura aleatoria: 1, 2 o 3 tiles
-	int width = 1 + rand() % 2; // 1 o 2 tiles de ancho
+	int width = 1 + rand() % 2;
 
 	int x = a.x;
 	int y = a.y;
 
-	// Horizontal
-	while (x != b.x) {
-		for (int w = 0; w < width; ++w) {
-			if (y + w < m_height - 1)
+	// Punto de giro — donde el corredor cambia de horizontal a vertical
+	// Aleatorizamos si gira antes o después para más variedad
+	bool horizontalFirst = (rand() % 2 == 0);
+
+	if (horizontalFirst) {
+		// Horizontal primero
+		while (x != b.x) {
+			for (int w = 0; w < width; ++w)
+				if (y + w < m_height - 1)
+					m_grid[y + w][x] = TileType::Floor;
+			x += (b.x > x) ? 1 : -1;
+		}
+		// Ensanchamiento en el giro
+		for (int w = -1; w <= width; ++w)
+			if (y + w > 0 && y + w < m_height - 1)
 				m_grid[y + w][x] = TileType::Floor;
-		}
-		x += (b.x > x) ? 1 : -1;
-	}
 
-	// Vertical
-	while (y != b.y) {
-		for (int w = 0; w < width; ++w) {
-			if (x + w < m_width - 1)
+		// Vertical después
+		while (y != b.y) {
+			for (int w = 0; w < width; ++w)
+				if (x + w < m_width - 1)
+					m_grid[y][x + w] = TileType::Floor;
+			y += (b.y > y) ? 1 : -1;
+		}
+	}
+	else {
+		// Vertical primero
+		while (y != b.y) {
+			for (int w = 0; w < width; ++w)
+				if (x + w < m_width - 1)
+					m_grid[y][x + w] = TileType::Floor;
+			y += (b.y > y) ? 1 : -1;
+		}
+		// Ensanchamiento en el giro
+		for (int w = -1; w <= width; ++w)
+			if (x + w > 0 && x + w < m_width - 1)
 				m_grid[y][x + w] = TileType::Floor;
+
+		// Horizontal después
+		while (x != b.x) {
+			for (int w = 0; w < width; ++w)
+				if (y + w < m_height - 1)
+					m_grid[y + w][x] = TileType::Floor;
+			x += (b.x > x) ? 1 : -1;
 		}
-		y += (b.y > y) ? 1 : -1;
 	}
 
-	// Celda final
+	// Celda final ensanchada
 	for (int w = 0; w < width; ++w)
 		for (int h = 0; h < width; ++h)
 			if (x + w < m_width - 1 && y + h < m_height - 1)
@@ -109,6 +137,7 @@ void Map::generate(int roomAttempts) {
 	for (size_t i = 1; i < m_rooms.size(); ++i) {
 		carveCorridor(m_rooms[i - 1].center(), m_rooms[i].center());
 	}
+	carveExtraCorridors();
 
 	assignRoomTypes();
 	m_startPosition = m_rooms.empty()
@@ -328,5 +357,48 @@ void Map::applyRoomShapes() {
 					m_grid[p[1]][p[0]] = TileType::PropColumn;
 			}
 		}
+	}
+}
+
+float Map::roomDistance(const Room& a, const Room& b) const {
+	sf::Vector2i ca = a.center();
+	sf::Vector2i cb = b.center();
+	float dx = static_cast<float>(ca.x - cb.x);
+	float dy = static_cast<float>(ca.y - cb.y);
+	return std::sqrt(dx * dx + dy * dy);
+}
+
+void Map::carveExtraCorridors() {
+	if (m_rooms.size() < 3) return;
+
+	// Número de conexiones extra: 20-30% del número de salas
+	int extras = std::max(1, static_cast<int>(m_rooms.size() * 0.25f));
+
+	// Distancia máxima para considerar una conexión extra
+	// (no queremos conectar salas demasiado lejanas — el corredor sería
+	//  muy largo y atravesaría otras salas)
+	const float MAX_DIST = 20.f;
+
+	int attempts = 0;
+	int placed = 0;
+
+	while (placed < extras && attempts < 200) {
+		++attempts;
+
+		// Dos salas aleatorias no adyacentes en la cadena
+		int idxA = rand() % m_rooms.size();
+		int idxB = rand() % m_rooms.size();
+
+		if (idxA == idxB) continue;
+		if (std::abs(idxA - idxB) == 1) continue; // ya están conectadas
+
+		const Room& a = m_rooms[idxA];
+		const Room& b = m_rooms[idxB];
+
+		// Solo conectamos si están suficientemente cerca
+		if (roomDistance(a, b) > MAX_DIST) continue;
+
+		carveCorridor(a.center(), b.center());
+		++placed;
 	}
 }

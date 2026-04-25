@@ -55,4 +55,6 @@ private:
 	void placeSignal();
 	void placeProps(float tileSize);
 	void applyRoomShapes();
+	void carveExtraCorridors();
+	float roomDistance(const Room& a, const Room& b) const;
 };

@@ -4,11 +4,10 @@ C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(26,18): warning
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(27,18): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp(95,27): warning C4305: '=': truncamiento de 'double' a 'float'
   Game.cpp
-  HazardZoneSystem.cpp
   HUD.cpp
-  main.cpp
+  HazardZoneSystem.cpp
   Map.cpp
-C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp(143,14): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp(172,14): warning C4244: 'inicializando': conversión de 'double' a 'float'; posible pérdida de datos
   Minimap.cpp
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Minimap.cpp(170,37): warning C4305: '-=': truncamiento de 'double' a 'float'
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Minimap.cpp(171,38): warning C4305: '+=': truncamiento de 'double' a 'float'
@@ -17,5 +16,6 @@ C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Minimap.cpp(171,38): warning C
   Renderer.cpp
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Renderer.cpp(328,12): warning C4244: 'inicializando': conversión de 'int' a 'float'; posible pérdida de datos
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Renderer.cpp(329,12): warning C4244: 'inicializando': conversión de 'int' a 'float'; posible pérdida de datos
+  main.cpp
   Generando código...
   2DGame.vcxproj -> C:\Users\Usuario\Desktop\C++\2DGame\2DGame\x64\Debug\2DGame.exe
