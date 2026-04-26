@@ -254,35 +254,104 @@ void Renderer::drawEnemies(const std::vector<Enemy>& enemies) {
 	float time = m_clock.getElapsedTime().asSeconds();
 
 	for (const auto& enemy : enemies) {
-		sf::Vector2f pos = enemy.getPosition();
+		// Phantom invisible no se dibuja
+		if (!enemy.isVisible() &&
+			enemy.getType() == EnemyType::Phantom) continue;
 
-		sf::Color bodyColor;
-		switch (enemy.getState()) {
-			case EnemyState::Patrol: bodyColor = sf::Color(120, 40, 40);  break;
+		sf::Vector2f pos = enemy.getPosition();
+		float        pulse = std::abs(std::sin(
+			time * (enemy.getState() == EnemyState::Chase ? 8.f : 2.f)));
+
+		switch (enemy.getType()) {
+
+		case EnemyType::Stalker: {
+			// Triángulo rojo — igual que antes
+			sf::Color bodyColor;
+			switch (enemy.getState()) {
 			case EnemyState::Chase:  bodyColor = sf::Color(255, 30, 30);  break;
 			case EnemyState::Search: bodyColor = sf::Color(180, 80, 80);  break;
+			default:                 bodyColor = sf::Color(120, 40, 40);  break;
+			}
+			float haloR = m_tileSize * (1.2f + 0.3f * pulse);
+			sf::CircleShape halo(haloR);
+			halo.setOrigin({ haloR, haloR });
+			halo.setPosition(pos);
+			halo.setFillColor(sf::Color(bodyColor.r, bodyColor.g,
+				bodyColor.b, static_cast<uint8_t>(20 + 20 * pulse)));
+			m_window.draw(halo);
+
+			sf::CircleShape body(m_tileSize * 0.38f, 3);
+			body.setOrigin({ m_tileSize * 0.38f, m_tileSize * 0.38f });
+			body.setPosition(pos);
+			body.setFillColor(bodyColor);
+			body.setOutlineColor(sf::Color(255, 80, 80, 180));
+			body.setOutlineThickness(1.5f);
+			m_window.draw(body);
+			break;
 		}
 
-		float pulseSpeed = (enemy.getState() == EnemyState::Chase) ? 8.f : 2.f;
-		float pulse = std::abs(std::sin(time * pulseSpeed));
+		case EnemyType::Lurker: {
+			// Rombo púrpura pequeño y rápido
+			sf::Color color = (enemy.getState() == EnemyState::Chase)
+				? sf::Color(220, 80, 255)
+				: sf::Color(140, 40, 180);
 
-		float haloR = m_tileSize * (1.2f + 0.3f * pulse);
-		sf::CircleShape halo(haloR);
-		halo.setOrigin({ haloR, haloR });
-		halo.setPosition(pos);
-		halo.setFillColor(sf::Color(
-				bodyColor.r, bodyColor.g, bodyColor.b,
-				static_cast<uint8_t>(20 + 20 * pulse)
-		));
-		m_window.draw(halo);
+			sf::RectangleShape body({
+				m_tileSize * 0.45f,
+				m_tileSize * 0.45f
+				});
+			body.setOrigin({ m_tileSize * 0.225f, m_tileSize * 0.225f });
+			body.setRotation(sf::degrees(45.f));
+			body.setPosition(pos);
+			body.setFillColor(color);
+			body.setOutlineColor(sf::Color(200, 100, 255, 200));
+			body.setOutlineThickness(1.5f);
+			m_window.draw(body);
+			break;
+		}
 
-		sf::CircleShape body(m_tileSize * 0.38f, 3);
-		body.setOrigin({ m_tileSize * 0.38f, m_tileSize * 0.38f });
-		body.setPosition(pos);
-		body.setFillColor(bodyColor);
-		body.setOutlineColor(sf::Color(255, 80, 80, 180));
-		body.setOutlineThickness(1.5f);
-		m_window.draw(body);
+		case EnemyType::Drainer: {
+			// Círculo naranja con anillo pulsante
+			float innerR = m_tileSize * 0.3f;
+			float outerR = m_tileSize * (1.5f + 0.5f * pulse);
+
+			// Aura de drenaje
+			sf::CircleShape aura(outerR);
+			aura.setOrigin({ outerR, outerR });
+			aura.setPosition(pos);
+			aura.setFillColor(sf::Color(0, 0, 0, 0));
+			aura.setOutlineColor(sf::Color(255, 120, 0,
+				static_cast<uint8_t>(40 + 40 * pulse)));
+			aura.setOutlineThickness(2.f);
+			m_window.draw(aura);
+
+			// Núcleo
+			sf::CircleShape body(innerR);
+			body.setOrigin({ innerR, innerR });
+			body.setPosition(pos);
+			body.setFillColor(sf::Color(200, 80, 0));
+			body.setOutlineColor(sf::Color(255, 160, 0, 200));
+			body.setOutlineThickness(1.5f);
+			m_window.draw(body);
+			break;
+		}
+
+		case EnemyType::Phantom: {
+			// Triángulo blanco fantasmal — semitransparente
+			uint8_t alpha = static_cast<uint8_t>(
+				enemy.isVisible() ? 180 + 40 * pulse : 0);
+
+			sf::CircleShape body(m_tileSize * 0.35f, 3);
+			body.setOrigin({ m_tileSize * 0.35f, m_tileSize * 0.35f });
+			body.setPosition(pos);
+			body.setFillColor(sf::Color(220, 230, 255, alpha));
+			body.setOutlineColor(sf::Color(180, 200, 255,
+				static_cast<uint8_t>(alpha * 0.7f)));
+			body.setOutlineThickness(1.f);
+			m_window.draw(body);
+			break;
+		}
+		}
 	}
 }
 

@@ -310,6 +310,15 @@ void Game::updateMovement(float dt) {
     m_energy.update(dt);
     m_audio.update(m_energy.getPercent());
     for (const auto& enemy : m_enemies) {
+        // Drainer — drena energía a distancia
+        float drain = enemy.getDrainAmount(m_player.getPosition(), dt);
+        if (drain > 0.f) {
+            m_energy.applyPenalty(drain);
+            // Viñeta naranja al ser drenado
+            m_hud.setEnemyProximity(drain * 5.f);
+        }
+
+        // Resto de enemigos — contacto = muerte
         if (!enemy.catchesPlayer(m_player.getPosition(), TILE_SIZE)) continue;
 
         if (m_powerUps.hasShield()) {
@@ -319,13 +328,13 @@ void Game::updateMovement(float dt) {
                 sf::Color(100, 180, 255));
             return;
         }
+
         m_state = GameState::Dying;
         m_slowMotionTimer = 0.f;
+        m_camera.triggerShake(0.6f, 12.f);
         m_audio.playGameOver();
-
-        m_hud.triggerDeathFlash();
         m_particles.emitBurst(m_player.getPosition(),
-                              sf::Color(255, 40, 40), 60);
+            sf::Color(255, 40, 40), 60);
         return;
     }
 }
@@ -336,7 +345,9 @@ void Game::updateEnemies(float dt) {
             dt,
             m_player.getPosition(),
             m_map,
-            m_currentHazard == HazardType::Radiation
+            m_currentHazard == HazardType::Radiation,
+            m_flashlight.getAngle(),
+            m_flashlight.getHalfAperture()
         );
 
         m_particles.emitEnemy(
@@ -717,21 +728,41 @@ void Game::spawnEnemies() {
     m_enemies.clear();
 
     const auto& rooms = m_map.getRooms();
-    sf::Vector2i startRoom = m_map.getStartPosition();
-    sf::Vector2i signalRoom = m_map.getSignalPosition();
+    sf::Vector2i start = m_map.getStartPosition();
+    sf::Vector2i signal = m_map.getSignalPosition();
 
     for (const auto& room : rooms) {
         sf::Vector2i center = room.center();
+        if (center == start || center == signal) continue;
+        if (rand() % 10 >= 2) continue; // 20% probabilidad
 
-        if (center == startRoom || center == signalRoom) continue;
+        sf::Vector2f worldPos(
+            (center.x + 0.5f) * TILE_SIZE,
+            (center.y + 0.5f) * TILE_SIZE
+        );
 
-        if (rand() % 10 < 2) {
-            sf::Vector2f worldPos(
-                (center.x + 0.5f) * TILE_SIZE,
-                (center.y + 0.5f) * TILE_SIZE
-            );
-            m_enemies.emplace_back(worldPos, TILE_SIZE);
+        // Tipo según sala
+        EnemyType type;
+        switch (room.type) {
+        case RoomType::Danger:
+            // Salas de peligro tienen Lurkers o Stalkers
+            type = (rand() % 2) ? EnemyType::Lurker
+                : EnemyType::Stalker;
+            break;
+        case RoomType::Control:
+            // Salas de control tienen Phantoms
+            type = EnemyType::Phantom;
+            break;
+        case RoomType::Storage:
+            // Salas de almacén tienen Drainers
+            type = EnemyType::Drainer;
+            break;
+        default:
+            type = EnemyType::Stalker;
+            break;
         }
+
+        m_enemies.emplace_back(worldPos, TILE_SIZE, type);
     }
 }
 

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
 
 Map::Map(int width, int height)
 	: m_width(width), m_height(height)
@@ -141,8 +142,10 @@ void Map::generate(int roomAttempts) {
 	for (size_t i = 1; i < m_rooms.size(); ++i)
 		carveCorridor(m_rooms[i - 1].center(), m_rooms[i].center());
 
+	size_t primaryCount = m_rooms.size();
+
 	placeSecondaryRooms();
-	connectSecondaryRooms();
+	connectSecondaryRooms(primaryCount);
 	carveExtraCorridors();
 	assignRoomTypes();
 	m_startPosition = m_rooms.empty()
@@ -409,42 +412,38 @@ void Map::carveExtraCorridors() {
 }
 
 void Map::placeSecondaryRooms() {
-	if (m_rooms.empty()) return;
+	// Guardamos el tamaño ANTES de añadir secundarias
 	size_t primaryCount = m_rooms.size();
 
 	auto randInt = [](int min, int max) {
 		return min + rand() % (max - min + 1);
 		};
 
-	// Intentamos colocar una sala secundaria en cada corredor
-	// entre salas principales adyacentes
 	int secondaryCount = 0;
-	const int MAX_SECONDARY = static_cast<int>(m_rooms.size() * 0.6f);
+	int maxSecondary = static_cast<int>(primaryCount * 0.6f);
 
-	for (size_t i = 0; i + 1 < m_rooms.size() &&
-		secondaryCount < MAX_SECONDARY; ++i) {
+	for (size_t i = 0; i + 1 < primaryCount &&
+		secondaryCount < maxSecondary; ++i) {
 
 		sf::Vector2i a = m_rooms[i].center();
 		sf::Vector2i b = m_rooms[i + 1].center();
+		int          midX = (a.x + b.x) / 2;
+		int          midY = (a.y + b.y) / 2;
 
-		// Punto medio entre las dos salas
-		int midX = (a.x + b.x) / 2;
-		int midY = (a.y + b.y) / 2;
-
-		// Sala secundaria pequeña centrada en el punto medio
 		Room secondary;
 		secondary.w = randInt(3, 6);
 		secondary.h = randInt(3, 5);
 		secondary.x = midX - secondary.w / 2;
 		secondary.y = midY - secondary.h / 2;
 
-		// Verificar límites
+		// Verificar límites del mapa
 		if (secondary.x < 1 || secondary.y < 1 ||
 			secondary.x + secondary.w >= m_width - 1 ||
 			secondary.y + secondary.h >= m_height - 1)
 			continue;
 
-		// Verificar que no solapa con salas existentes
+		// Verificar solapamiento solo con salas YA existentes
+		// (tanto primarias como secundarias ya añadidas)
 		bool valid = true;
 		for (const auto& existing : m_rooms) {
 			if (secondary.overlaps(existing)) {
@@ -452,11 +451,9 @@ void Map::placeSecondaryRooms() {
 				break;
 			}
 		}
-
 		if (!valid) continue;
 
-		// Asignar tipo — las secundarias son mayormente normales
-		// pero ocasionalmente Storage o Danger
+		// Tipo de sala
 		int roll = rand() % 10;
 		if (roll < 2) secondary.type = RoomType::Storage;
 		else if (roll < 4) secondary.type = RoomType::Danger;
@@ -468,25 +465,25 @@ void Map::placeSecondaryRooms() {
 	}
 }
 
-void Map::connectSecondaryRooms() {
-	// Las salas secundarias (las últimas añadidas) se conectan
-	// a la sala principal más cercana
-	size_t primaryCount = m_rooms.size();
-
+void Map::connectSecondaryRooms(size_t primaryCount) {
+	// Conectamos cada sala secundaria a las DOS salas principales
+	// más cercanas — garantiza accesibilidad siempre
 	for (size_t i = primaryCount; i < m_rooms.size(); ++i) {
 		const Room& secondary = m_rooms[i];
-		float       minDist = std::numeric_limits<float>::max();
-		size_t      closest = 0;
 
-		// Buscar la sala principal más cercana
+		// Ordenamos las salas primarias por distancia
+		std::vector<std::pair<float, size_t>> distances;
 		for (size_t j = 0; j < primaryCount; ++j) {
-			float dist = roomDistance(secondary, m_rooms[j]);
-			if (dist < minDist) {
-				minDist = dist;
-				closest = j;
-			}
+			distances.push_back({
+				roomDistance(secondary, m_rooms[j]), j
+				});
 		}
+		std::sort(distances.begin(), distances.end());
 
-		carveCorridor(secondary.center(), m_rooms[closest].center());
+		// Conectamos a las 2 más cercanas — nunca queda aislada
+		int connections = std::min(2, static_cast<int>(distances.size()));
+		for (int c = 0; c < connections; ++c)
+			carveCorridor(secondary.center(),
+				m_rooms[distances[c].second].center());
 	}
 }

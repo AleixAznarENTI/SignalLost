@@ -58,5 +58,5 @@ private:
 	void carveExtraCorridors();
 	float roomDistance(const Room& a, const Room& b) const;
 	void placeSecondaryRooms();
-	void connectSecondaryRooms();
+	void connectSecondaryRooms(size_t primaryCount);
 };
