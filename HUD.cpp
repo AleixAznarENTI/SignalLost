@@ -108,6 +108,7 @@ void HUD::update(float dt, GameState state) {
 	tick(m_zoneNotifTimer);
 	tick(m_deathFlashTimer);
 	tick(m_signalHintTimer);
+	tick(m_logMessageTimer);
 
 	if (state == GameState::Playing && m_uiFadeTimer < UI_FADE_DURATION)
 		m_uiFadeTimer += dt;
@@ -175,6 +176,7 @@ void HUD::drawScoreScreen(GameState state) {
 		{ "DISTANCE",         std::to_string(static_cast<int>(
 								   m_statDistance)) + " steps"            },
 		{ "VISITED ROOMS",   std::to_string(m_statRooms)                },
+		{ "DATA LOGS FOUND",      std::to_string(m_statLogs)                 },
 	};
 
 	float startY = h / 2.f - 60.f;
@@ -336,6 +338,7 @@ void HUD::draw(float energyPercent, GameState state) {
 		drawSignalHint();
 		drawFeedback();
 		drawZoneNotification();
+		drawLogMessage();
 		break;
 	case GameState::Winning:
 		// No UI while winning sequence
@@ -689,18 +692,21 @@ void HUD::setCurrentRoom(RoomType room) {
 	if (room != m_prevRoom) {
 		if (room == RoomType::Danger)  triggerDangerEnter();
 		if (room == RoomType::Control) triggerControlEnter();
+		if (room == RoomType::Safe) 
+			triggerZoneNotification("SAFE ROOM", sf::Color(100, 220, 140));
 		m_prevRoom = room;
 	}
 	m_currentRoom = room;
 }
 
 void HUD::setStats(float time, int batteries,
-	float distance, int rooms)
+	float distance, int rooms, int logs)
 {
 	m_statTime = time;
 	m_statBatteries = batteries;
 	m_statDistance = distance;
 	m_statRooms = rooms;
+	m_statLogs = logs;
 }
 
 uint8_t HUD::getUIAlpha() const {
@@ -788,4 +794,57 @@ void HUD::drawSignalHint() {
 		label.setPosition({ cx, cy + 80.f });
 		m_window.draw(label);
 	}
+}
+
+void HUD::showLogMessage(const std::string& message) {
+	m_logMessage = message;
+	m_logMessageTimer = 4.f;
+}
+
+void HUD::drawLogMessage() {
+	if (m_logMessageTimer <= 0.f) return;
+
+	float progress = 1.f - (m_logMessageTimer / 4.f);
+	float alpha;
+	if (progress < 0.1f) alpha = progress / 0.1f;
+	else if (progress < 0.7f) alpha = 1.f;
+	else                      alpha = 1.f - (progress - 0.7f) / 0.3f;
+
+	float w = static_cast<float>(m_window.getSize().x);
+	float h = static_cast<float>(m_window.getSize().y);
+
+	// Fondo del mensaje
+	sf::RectangleShape bg({ 400.f, 100.f });
+	bg.setOrigin({ 200.f, 50.f });
+	bg.setFillColor(sf::Color(0, 0, 0,
+		static_cast<uint8_t>(alpha * 180.f)));
+	bg.setOutlineColor(sf::Color(80, 140, 255,
+		static_cast<uint8_t>(alpha * 150.f)));
+	bg.setOutlineThickness(1.f);
+	bg.setPosition({ w * 0.75f, h * 0.3f });
+	m_window.draw(bg);
+
+	// Título
+	sf::Text title(m_font, "DATA LOG FOUND", 11);
+	title.setFillColor(sf::Color(80, 140, 255,
+		static_cast<uint8_t>(alpha * 200.f)));
+	sf::FloatRect tb = title.getLocalBounds();
+	title.setOrigin({
+		tb.position.x + tb.size.x / 2.f,
+		tb.position.y + tb.size.y / 2.f
+		});
+	title.setPosition({ w * 0.75f, h * 0.3f - 35.f });
+	m_window.draw(title);
+
+	// Mensaje
+	sf::Text msg(m_font, m_logMessage, 12);
+	msg.setFillColor(sf::Color(180, 200, 255,
+		static_cast<uint8_t>(alpha * 220.f)));
+	sf::FloatRect mb = msg.getLocalBounds();
+	msg.setOrigin({
+		mb.position.x + mb.size.x / 2.f,
+		mb.position.y + mb.size.y / 2.f
+		});
+	msg.setPosition({ w * 0.75f, h * 0.3f });
+	m_window.draw(msg);
 }

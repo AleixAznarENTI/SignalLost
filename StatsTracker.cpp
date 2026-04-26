@@ -8,6 +8,7 @@ void StatsTracker::reset() {
     m_batteries = 0;
     m_distance = 0.f;
     m_roomsVisited = 0;
+    m_logsFound = 0;
     m_firstUpdate = true;
     m_visitedRooms.clear();
 }
@@ -42,4 +43,8 @@ std::string StatsTracker::getFormattedTime() const {
     std::ostringstream oss;
     oss << minutes << ":" << std::setw(2) << std::setfill('0') << seconds;
     return oss.str();
+}
+
+void StatsTracker::registerLogFound() {
+	++m_logsFound;
 }

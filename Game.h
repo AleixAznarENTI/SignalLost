@@ -18,6 +18,9 @@
 #include "PostProcess.h"
 #include "PowerUpSystem.h"
 #include "PauseMenu.h"
+#include "DataLogSystem.h"
+#include "TerminalSystem.h"
+#include "KeyDoorSystem.h"
 
 class Game {
     public:
@@ -47,6 +50,9 @@ class Game {
         PowerUpSystem    m_powerUps;
         HazardZoneSystem m_hazards;
         PauseMenu        m_pauseMenu;
+        DataLogSystem  m_dataLogs;
+        TerminalSystem m_terminals;
+        KeyDoorSystem  m_keyDoors;
 
         // --- Entities ---
         std::vector<Battery> m_batteries;
@@ -91,6 +97,7 @@ class Game {
         void updateEnemies(float dt);
         void updateBatteries(float dt);
         void updatePowerUps(float dt);
+        void updateSecondaryObjectives(float dt);
         void updateEnemyProximity();
         void checkEndConditions();
 

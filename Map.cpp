@@ -157,12 +157,32 @@ void Map::generate(int roomAttempts) {
 }
 
 void Map::assignRoomTypes() {
+	if (m_rooms.size() < 2) return;
+
+	// Primera y última siempre Normal (spawn y señal)
+	// Una sala aleatoria en el medio es Safe
+	bool safePlaced = false;
+
 	for (size_t i = 1; i + 1 < m_rooms.size(); ++i) {
 		int roll = rand() % 10;
-		if		(roll < 3) m_rooms[i].type = RoomType::Storage;
+
+		// 10% de probabilidad de Safe, solo una vez
+		if (!safePlaced && roll == 0) {
+			m_rooms[i].type = RoomType::Safe;
+			safePlaced = true;
+			continue;
+		}
+
+		if (roll < 3) m_rooms[i].type = RoomType::Storage;
 		else if (roll < 5) m_rooms[i].type = RoomType::Danger;
 		else if (roll < 6) m_rooms[i].type = RoomType::Control;
-		else			   m_rooms[i].type = RoomType::Normal;
+		else               m_rooms[i].type = RoomType::Normal;
+	}
+
+	// Si no se colocó ninguna Safe, forzamos una en el medio
+	if (!safePlaced && m_rooms.size() > 2) {
+		size_t mid = m_rooms.size() / 2;
+		m_rooms[mid].type = RoomType::Safe;
 	}
 }
 
@@ -192,26 +212,27 @@ void Map::placeBatteries(float tileSize) {
 	m_batteries.clear();
 
 	for (const auto& room : m_rooms) {
-		int count = (room.type == RoomType::Storage)
-			? 2 + rand() % 2
-			: rand() % 2;
+		int count = 0;
+
+		switch (room.type) {
+		case RoomType::Safe:    count = 2;              break; // siempre 2
+		case RoomType::Storage: count = 3 + rand() % 2; break;
+		default:                count = 1 + rand() % 2; break;
+		}
 
 		for (int i = 0; i < count; ++i) {
 			for (int attempt = 0; attempt < 30; ++attempt) {
 				int tx = room.x + 1 + rand() % (room.w - 2);
 				int ty = room.y + 1 + rand() % (room.h - 2);
 
-				// ← solo Floor puro, no props ni paredes
 				if (m_grid[ty][tx] != TileType::Floor) continue;
-
-				// No encima de la señal
 				if (sf::Vector2i(tx, ty) == m_signalPosition) continue;
 
-				sf::Vector2f worldPos(
-					(tx + 0.5f) * tileSize,
-					(ty + 0.5f) * tileSize
+				m_batteries.emplace_back(
+					sf::Vector2f((tx + 0.5f) * tileSize,
+						(ty + 0.5f) * tileSize),
+					35.f
 				);
-				m_batteries.emplace_back(worldPos, 25.f);
 				break;
 			}
 		}
@@ -486,4 +507,9 @@ void Map::connectSecondaryRooms(size_t primaryCount) {
 			carveCorridor(secondary.center(),
 				m_rooms[distances[c].second].center());
 	}
+}
+
+void Map::setTile(int x, int y, TileType type) {
+	if (x < 0 || x >= m_width || y < 0 || y >= m_height) return;
+	m_grid[y][x] = type;
 }

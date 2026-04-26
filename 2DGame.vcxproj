@@ -133,12 +133,14 @@
     <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Battery.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="DataLogSystem.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="EnergySystem.cpp" />
     <ClCompile Include="Flashlight.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HazardZoneSystem.cpp" />
     <ClCompile Include="HUD.cpp" />
+    <ClCompile Include="KeyDoorSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Minimap.cpp" />
@@ -150,13 +152,17 @@
     <ClCompile Include="PowerUpSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="StatsTracker.cpp" />
+    <ClCompile Include="TerminalSystem.cpp" />
     <ClCompile Include="TypewriterText.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Battery.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="DataLog.h" />
+    <ClInclude Include="DataLogSystem.h" />
     <ClInclude Include="Enemy.h" />
+    <ClInclude Include="EnemyType.h" />
     <ClInclude Include="EnergySystem.h" />
     <ClInclude Include="Flashlight.h" />
     <ClInclude Include="Game.h" />
@@ -164,6 +170,8 @@
     <ClInclude Include="HazardZone.h" />
     <ClInclude Include="HazardZoneSystem.h" />
     <ClInclude Include="HUD.h" />
+    <ClInclude Include="KeyDoor.h" />
+    <ClInclude Include="KeyDoorSystem.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="Minimap.h" />
     <ClInclude Include="ParticleSystem.h" />
@@ -175,6 +183,8 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="StatsTracker.h" />
+    <ClInclude Include="Terminal.h" />
+    <ClInclude Include="TerminalSystem.h" />
     <ClInclude Include="TypewriterText.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

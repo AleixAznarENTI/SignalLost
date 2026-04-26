@@ -28,11 +28,12 @@ public:
 	int			 getHeight()		   const { return m_height; }
 	sf::Vector2i getStartPosition()    const { return m_startPosition; }
 	sf::Vector2i getSignalPosition()   const { return m_signalPosition; }
-	
 	const std::vector<Battery>& getBatteries() const { return m_batteries; }
 	const std::vector<Room>&    getRooms()	   const { return m_rooms; }
-
 	RoomType getRoomTypeAt(int tx, int ty) const;
+
+	void setTile(int x, int y, TileType type);
+
 	bool isSolid(int x, int y) const;
 
 private:

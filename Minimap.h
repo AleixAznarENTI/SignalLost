@@ -16,6 +16,7 @@ public:
                   float        flashRadius,
                   const Map&   map,
                   float        worldTileSize);
+	void revealSignal(sf::Vector2f signalWorldPos, float worldTileSize);
 
     void draw(sf::Vector2f playerWorldPos, float worldTileSize);
     void drawEnemyDots(const std::vector<Enemy>& enemies,
@@ -25,6 +26,7 @@ public:
     void setAlpha(uint8_t alpha) { m_alpha = alpha; }
 
 private:
+    sf::Clock m_clock;
     sf::RenderWindow& m_window;
     float             m_tileSize;
     float             m_margin;

@@ -269,6 +269,7 @@ void Game::update(float dt) {
     updateHazardEffects(dt, playerTile);
     updateEnemies(dt);
     updateBatteries(dt);
+    updateSecondaryObjectives(dt);
     updatePowerUps(dt);
     updateEnemyProximity();
     checkEndConditions();
@@ -284,7 +285,8 @@ void Game::update(float dt) {
         m_stats.getTime(),
         m_stats.getBatteriesCollected(),
         m_stats.getDistanceTraveled(),
-        m_stats.getRoomsVisited()
+        m_stats.getRoomsVisited(),
+        m_stats.getLogsFound()
     );
 
     // Sistemas que dependen de todo lo anterior
@@ -305,9 +307,16 @@ void Game::updateMovement(float dt) {
 
     float speedMult = m_powerUps.isActive(PowerUpType::Speed) ? 1.8f : 1.f;
     m_player.setSpeedMultiplier(speedMult);
-
     m_player.move(velocity, dt, m_map);
-    m_energy.update(dt);
+
+    sf::Vector2i playerTile(
+        static_cast<int>(m_player.getPosition().x / TILE_SIZE),
+        static_cast<int>(m_player.getPosition().y / TILE_SIZE)
+    );
+    bool inSafeRoom = m_map.getRoomTypeAt(
+        playerTile.x, playerTile.y) == RoomType::Safe;
+
+    m_energy.update(dt, inSafeRoom);
     m_audio.update(m_energy.getPercent());
     for (const auto& enemy : m_enemies) {
         // Drainer — drena energía a distancia
@@ -405,6 +414,10 @@ void Game::updateRoomEffects(float dt, sf::Vector2i playerTile) {
         m_energy.applyPenalty(15.f * dt);
     }
 
+    if (currentRoom == RoomType::Safe) {
+        m_audio.setMusicVolume(0.2f);
+    }
+
     float baseRadius = m_powerUps.isActive(PowerUpType::Flashlight)
         ? 280.f
         : 160.f;
@@ -478,6 +491,17 @@ void Game::updatePowerUps(float dt) {
 
 void Game::updateHazardEffects(float dt, sf::Vector2i playerTile) {
 
+        RoomType currentRoomType = m_map.getRoomTypeAt(
+        playerTile.x, playerTile.y);
+
+    if (currentRoomType == RoomType::Safe) {
+        m_player.setSpeedMultiplier(1.f);
+        m_audio.updateZoneAudio(HazardType::None);
+        m_flashlight.setRadius(200.f);
+        m_flashlight.setLightColor(sf::Color(255, 240, 200));
+        m_currentHazard = HazardType::None;
+        return; // ← saltamos todo lo demás
+    }
 
     m_currentHazard = m_hazards.getHazardAt(playerTile.x, playerTile.y);
 
@@ -609,6 +633,10 @@ void Game::render() {
         m_renderer.drawMap();
         m_renderer.drawBatteries(m_batteries, m_player.getPosition());
         m_renderer.drawPowerUps(m_powerUps.getPickups());
+		m_renderer.drawDataLogs(m_dataLogs.getLogs());
+		m_renderer.drawTerminals(m_terminals.getTerminals());
+		m_renderer.drawKeys(m_keyDoors.getKeys());
+		m_renderer.drawDoors(m_keyDoors.getDoors());
         m_renderer.drawSignal(m_signalPos);
         m_renderer.drawEnemies(m_enemies);
         m_renderer.drawPlayer(m_player.getPosition());
@@ -622,6 +650,9 @@ void Game::render() {
     // --- Minimap (only while playing) ---
     if (m_state == GameState::Playing) {
         m_minimap.setAlpha(m_hud.getUIAlpha());
+        if (m_terminals.isSignalRevealed()) {
+            m_minimap.revealSignal(m_signalPos, TILE_SIZE);
+        }
         m_minimap.draw(m_player.getPosition(), TILE_SIZE);
         m_minimap.drawEnemyDots(
             m_enemies,
@@ -715,13 +746,16 @@ void Game::initMap() {
     m_renderer.bakeMap(m_map);
     m_minimap.bake(m_map);
     m_player = Player(sf::Vector2f(m_map.getStartPosition()) * TILE_SIZE, TILE_SIZE);
-    m_energy = EnergySystem(100.f, 5.f);
+    m_energy = EnergySystem(100.f, 2.5f);
     m_batteries = m_map.getBatteries();
     m_signalPos = sf::Vector2f(m_map.getSignalPosition()) * TILE_SIZE;
     spawnEnemies();
     m_stats.reset();
     m_powerUps.generate(m_map, TILE_SIZE);
     m_hud.setPowerUpSystem(&m_powerUps);
+    m_dataLogs.generate(m_map, TILE_SIZE);
+    m_terminals.generate(m_map, TILE_SIZE);
+    m_keyDoors.generate(m_map, TILE_SIZE);
 }
 
 void Game::spawnEnemies() {
@@ -732,6 +766,7 @@ void Game::spawnEnemies() {
     sf::Vector2i signal = m_map.getSignalPosition();
 
     for (const auto& room : rooms) {
+        if (room.type == RoomType::Safe) continue;
         sf::Vector2i center = room.center();
         if (center == start || center == signal) continue;
         if (rand() % 10 >= 2) continue; // 20% probabilidad
@@ -770,10 +805,63 @@ void Game::spawnEnemies() {
 // reset: restarts the game by regenerating the map, repositioning the player, resetting energy and batteries, and playing ambient music
 // ----------------------------------------------------------------
 void Game::reset() {
+    m_dataLogs.reset();
+    m_terminals.reset();
+    m_keyDoors.reset();
     m_audio.stopAll();
     initMap();
     m_state = GameState::Playing;
     m_prevState = GameState::Playing;
     m_hud.onStateChanged(GameState::Playing);
     m_audio.playAmbient();
+
+}
+
+void Game::updateSecondaryObjectives(float dt) {
+    sf::Vector2f playerPos = m_player.getPosition();
+    float        threshold = TILE_SIZE * 0.8f;
+    float        threshSq = threshold * threshold;
+
+    // --- Data Logs ---
+    for (auto& log : m_dataLogs.getLogs()) {
+        if (log.collected) continue;
+
+        sf::Vector2f diff = playerPos - log.position;
+        if (diff.x * diff.x + diff.y * diff.y < threshSq) {
+            log.collect();
+            m_energy.restore(log.energyBonus);
+            m_hud.triggerBatteryPickup();
+            m_hud.showLogMessage(log.message);
+            m_audio.playBatteryPickup();
+            m_stats.registerLogFound();  // ← añadir en StatsTracker
+        }
+    }
+
+    // --- Terminals ---
+    m_terminals.update(dt);
+    for (auto& terminal : m_terminals.getTerminals()) {
+        sf::Vector2f diff = playerPos - terminal.position;
+        if (diff.x * diff.x + diff.y * diff.y < threshSq &&
+            !terminal.activated) {
+            terminal.activate();
+            m_hud.triggerZoneNotification(
+                "TERMINAL ACTIVATED", sf::Color(0, 200, 100));
+            m_audio.playBatteryPickup();
+        }
+    }
+
+    // --- Keys ---
+    for (auto& key : m_keyDoors.getKeys()) {
+        if (key.collected) continue;
+
+        sf::Vector2f diff = playerPos - key.position;
+        if (diff.x * diff.x + diff.y * diff.y < threshSq) {
+            key.collect();
+            m_keyDoors.onKeyCollected(key.doorId, m_map);
+            m_renderer.bakeMap(m_map); // ← re-bake para mostrar puerta abierta
+            m_hud.triggerZoneNotification(
+                "KEY FOUND", sf::Color(220, 180, 0));
+            m_audio.playBatteryPickup();
+        }
+    }
 }

@@ -4,7 +4,7 @@ class EnergySystem
 public:
 	EnergySystem(float maxEnegery = 100.f, float drainRate = 4.f);
 
-	void update(float dt);
+	void update(float dt, bool paused = false);
 
 	void applyPenalty(float amount);
 	void restore(float amount);

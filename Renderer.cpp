@@ -65,6 +65,9 @@ void Renderer::bakeMap(const Map& map) {
 				case RoomType::Control:
 					m_tileShape.setFillColor(sf::Color(40, 60, 90));
 					break;
+				case RoomType::Safe:
+					m_tileShape.setFillColor(sf::Color(50, 70, 55)); // verde muy oscuro y cálido
+					break;
 				default:
 					m_tileShape.setFillColor(sf::Color(70, 70, 100));
 					break;
@@ -418,4 +421,161 @@ void Renderer::drawDebris(int x, int y) {
 
 	// Restauramos la semilla aleatoria del juego
 	srand(static_cast<unsigned>(time(nullptr)));
+}
+
+void Renderer::drawDataLogs(const std::vector<DataLog>& logs) {
+	float time = m_clock.getElapsedTime().asSeconds();
+	float pulse = std::abs(std::sin(time * 1.5f));
+
+	for (const auto& log : logs) {
+		if (log.collected) continue;
+
+		sf::Vector2f pos = log.position;
+
+		// Halo azul tenue
+		float haloR = m_tileSize * (0.8f + 0.2f * pulse);
+		sf::CircleShape halo(haloR);
+		halo.setOrigin({ haloR, haloR });
+		halo.setPosition(pos);
+		halo.setFillColor(sf::Color(50, 100, 200,
+			static_cast<uint8_t>(20 + 15 * pulse)));
+		m_window.draw(halo);
+
+		// Icono — rectángulo pequeño con líneas (como un documento)
+		sf::RectangleShape doc({ m_tileSize * 0.4f, m_tileSize * 0.5f });
+		doc.setOrigin({ m_tileSize * 0.2f, m_tileSize * 0.25f });
+		doc.setFillColor(sf::Color(40, 60, 120));
+		doc.setOutlineColor(sf::Color(80, 140, 255,
+			static_cast<uint8_t>(180 + 75 * pulse)));
+		doc.setOutlineThickness(1.5f);
+		doc.setPosition(pos);
+		m_window.draw(doc);
+
+		// Líneas del documento
+		for (int i = 0; i < 3; ++i) {
+			sf::RectangleShape line({ m_tileSize * 0.25f, 1.5f });
+			line.setFillColor(sf::Color(80, 140, 255, 150));
+			line.setPosition({
+				pos.x - m_tileSize * 0.125f,
+				pos.y - m_tileSize * 0.08f + i * m_tileSize * 0.1f
+				});
+			m_window.draw(line);
+		}
+	}
+}
+
+void Renderer::drawTerminals(const std::vector<Terminal>& terminals) {
+	float time = m_clock.getElapsedTime().asSeconds();
+	float pulse = std::abs(std::sin(time * 3.f));
+
+	for (const auto& terminal : terminals) {
+		sf::Vector2f pos = terminal.position;
+
+		// Color según estado
+		sf::Color color = terminal.activated
+			? sf::Color(0, 200, 100)   // verde — activa
+			: sf::Color(0, 100, 180);  // azul — inactiva
+
+		// Base de la terminal
+		sf::RectangleShape base({ m_tileSize * 0.6f, m_tileSize * 0.55f });
+		base.setOrigin({ m_tileSize * 0.3f, m_tileSize * 0.275f });
+		base.setFillColor(sf::Color(20, 30, 50));
+		base.setOutlineColor(color);
+		base.setOutlineThickness(1.5f);
+		base.setPosition(pos);
+		m_window.draw(base);
+
+		// Pantalla
+		sf::RectangleShape screen({ m_tileSize * 0.4f, m_tileSize * 0.3f });
+		screen.setOrigin({ m_tileSize * 0.2f, m_tileSize * 0.15f });
+
+		if (terminal.isRevealing()) {
+			// Pantalla parpadeante cuando está activa
+			uint8_t bright = static_cast<uint8_t>(100 + 100 * pulse);
+			screen.setFillColor(sf::Color(0, bright, 50));
+		}
+		else {
+			screen.setFillColor(sf::Color(0, 30, 60));
+		}
+		screen.setPosition({ pos.x, pos.y - m_tileSize * 0.05f });
+		m_window.draw(screen);
+
+		// Punto de luz
+		sf::CircleShape dot(2.f);
+		dot.setOrigin({ 2.f, 2.f });
+		dot.setFillColor(sf::Color(
+			color.r, color.g, color.b,
+			static_cast<uint8_t>(150 + 100 * pulse)
+		));
+		dot.setPosition({ pos.x + m_tileSize * 0.2f,
+						  pos.y - m_tileSize * 0.2f });
+		m_window.draw(dot);
+	}
+}
+
+void Renderer::drawKeys(const std::vector<Key>& keys) {
+	float time = m_clock.getElapsedTime().asSeconds();
+	float pulse = std::abs(std::sin(time * 2.f));
+
+	for (const auto& key : keys) {
+		if (key.collected) continue;
+
+		sf::Vector2f pos = key.position;
+
+		// Halo dorado
+		float haloR = m_tileSize * (0.7f + 0.2f * pulse);
+		sf::CircleShape halo(haloR);
+		halo.setOrigin({ haloR, haloR });
+		halo.setPosition(pos);
+		halo.setFillColor(sf::Color(200, 160, 0,
+			static_cast<uint8_t>(25 + 20 * pulse)));
+		m_window.draw(halo);
+
+		// Icono de llave — círculo + rectángulo
+		sf::CircleShape head(m_tileSize * 0.2f);
+		head.setOrigin({ m_tileSize * 0.2f, m_tileSize * 0.2f });
+		head.setFillColor(sf::Color(0, 0, 0, 0));
+		head.setOutlineColor(sf::Color(220, 180, 0,
+			static_cast<uint8_t>(200 + 55 * pulse)));
+		head.setOutlineThickness(2.f);
+		head.setPosition({ pos.x - m_tileSize * 0.1f, pos.y });
+		m_window.draw(head);
+
+		sf::RectangleShape shaft({ m_tileSize * 0.35f, 3.f });
+		shaft.setOrigin({ 0.f, 1.5f });
+		shaft.setFillColor(sf::Color(220, 180, 0,
+			static_cast<uint8_t>(200 + 55 * pulse)));
+		shaft.setPosition({ pos.x + m_tileSize * 0.1f, pos.y });
+		m_window.draw(shaft);
+	}
+}
+
+void Renderer::drawDoors(const std::vector<Door>& doors) {
+	for (const auto& door : doors) {
+		if (door.open) continue;
+
+		sf::Vector2f pos(
+			door.tilePos.x * m_tileSize,
+			door.tilePos.y * m_tileSize
+		);
+
+		sf::RectangleShape d({ m_tileSize - 1.f, m_tileSize - 1.f });
+		d.setFillColor(sf::Color(60, 40, 10));
+		d.setOutlineColor(sf::Color(180, 130, 0, 200));
+		d.setOutlineThickness(2.f);
+		d.setPosition(pos);
+		m_window.draw(d);
+
+		// Icono de candado
+		sf::CircleShape lock(m_tileSize * 0.15f);
+		lock.setOrigin({ m_tileSize * 0.15f, m_tileSize * 0.15f });
+		lock.setFillColor(sf::Color(0, 0, 0, 0));
+		lock.setOutlineColor(sf::Color(220, 180, 0, 180));
+		lock.setOutlineThickness(1.5f);
+		lock.setPosition({
+			pos.x + m_tileSize * 0.5f,
+			pos.y + m_tileSize * 0.4f
+			});
+		m_window.draw(lock);
+	}
 }

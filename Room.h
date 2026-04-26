@@ -5,7 +5,8 @@ enum class RoomType {
 	Normal,
 	Storage,
 	Control,
-	Danger
+	Danger,
+	Safe
 };
 
 enum class RoomShape {

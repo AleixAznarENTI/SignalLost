@@ -225,3 +225,35 @@ void Minimap::draw(sf::Vector2f playerWorldPos, float worldTileSize) {
 
     m_window.setView(prev);
 }
+
+void Minimap::revealSignal(sf::Vector2f signalWorldPos,
+    float        worldTileSize)
+{
+    sf::View prev = m_window.getView();
+    m_window.setView(m_window.getDefaultView());
+
+    float screenW = static_cast<float>(m_window.getSize().x);
+    float screenH = static_cast<float>(m_window.getSize().y);
+    sf::Vector2f origin(m_margin, m_margin);
+
+    sf::Vector2i tile(
+        static_cast<int>(signalWorldPos.x / worldTileSize),
+        static_cast<int>(signalWorldPos.y / worldTileSize)
+    );
+
+    // Punto verde parpadeante en el minimapa
+    float pulse = std::abs(std::sin(
+        m_clock.getElapsedTime().asSeconds() * 4.f));
+
+    sf::CircleShape dot(4.f);
+    dot.setFillColor(sf::Color(80, 255, 120,
+        static_cast<uint8_t>(150 + 100 * pulse)));
+    dot.setOrigin({ 4.f, 4.f });
+    dot.setPosition({
+        origin.x + tile.x * m_tileSize,
+        origin.y + tile.y * m_tileSize
+        });
+    m_window.draw(dot);
+
+    m_window.setView(prev);
+}

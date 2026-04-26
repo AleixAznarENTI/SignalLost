@@ -1,12 +1,14 @@
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\AudioManager.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\AudioManager.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Battery.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Battery.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Camera.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Camera.obj
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\DataLogSystem.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\DataLogSystem.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Enemy.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Enemy.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\EnergySystem.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\EnergySystem.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Flashlight.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Flashlight.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Game.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Game.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\HazardZoneSystem.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\HazardZoneSystem.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\HUD.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\HUD.obj
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\KeyDoorSystem.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\KeyDoorSystem.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\main.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\main.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Map.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Map.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Minimap.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Minimap.obj
@@ -18,4 +20,5 @@ C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\PowerUp.cpp;C:\Users\Usuario\D
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\PowerUpSystem.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\PowerUpSystem.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\Renderer.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\Renderer.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\StatsTracker.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\StatsTracker.obj
+C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\TerminalSystem.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\TerminalSystem.obj
 C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\TypewriterText.cpp;C:\Users\Usuario\Desktop\C++\2DGame\2DGame\2DGame\x64\Debug\TypewriterText.obj

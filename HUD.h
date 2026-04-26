@@ -15,12 +15,13 @@ public:
 	void draw(float energyPercentage, GameState gameState);
 	void onStateChanged(GameState newState);
 	uint8_t getUIAlpha() const;
+	void showLogMessage(const std::string& message);
 	void setSignalInfo(sf::Vector2f playerPos,
 					   sf::Vector2f signalPos,
 					   bool			inControlRoom);
 	void setEnemyProximity(float alpha);
 	void setStats(float time, int batteries,
-				  float distance, int rooms);
+				  float distance, int rooms, int logs);
 	void setCurrentRoom(RoomType room);
 	void setPowerUpSystem(const PowerUpSystem* system) { m_powerUps = system; }
 	void setWakingTimer(float timer) { m_wakingTimer = timer; }
@@ -44,6 +45,7 @@ private:
 	float m_wakingTimer = 0.f;
 	float m_uiFadeTimer = 0.f;
 	float m_deathFlashTimer = 0.f;
+	std::string m_logMessage;
 
 	// Signal state
 	float m_signalAngle = 0.f;
@@ -57,6 +59,7 @@ private:
 	float m_controlVignetteTimer = 0.f;
 	float m_signalFlashTimer = 0.f;
 	float m_signalHintTimer = 0.f;
+	float m_logMessageTimer = 0.f;
 
 	RoomType m_currentRoom = RoomType::Normal;
 	RoomType m_prevRoom = RoomType::Normal;
@@ -73,6 +76,7 @@ private:
 	int         m_statBatteries = 0;
 	float       m_statDistance = 0.f;
 	int         m_statRooms = 0;
+	int         m_statLogs = 0;
 
 	// --- Draw Helpers ---
 	void drawEnergyBar(float energyPercentage);
@@ -85,6 +89,7 @@ private:
 	void drawScoreScreen(GameState state);
 	void drawActivePowerUps();
 	void drawSignalHint();
+	void drawLogMessage();
 
 
 

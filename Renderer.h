@@ -7,6 +7,9 @@
 #include "Battery.h"
 #include "Enemy.h"
 #include "PowerUp.h"
+#include "DataLogSystem.h"
+#include "TerminalSystem.h"
+#include "KeyDoorSystem.h"
 
 class Renderer
 {
@@ -23,6 +26,10 @@ public:
 						sf::Vector2f playerPos);
 	void drawEnemies(const std::vector<Enemy>& enemies);
 	void drawPowerUps(const std::vector<PowerUp>& powerUps);
+	void drawDataLogs(const std::vector<DataLog>& logs);
+	void drawTerminals(const std::vector<Terminal>& terminals);
+	void drawKeys(const std::vector<Key>& keys);
+	void drawDoors(const std::vector<Door>& doors);
 
 private:
 	sf::RenderWindow& m_window;
